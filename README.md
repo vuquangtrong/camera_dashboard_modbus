@@ -31,19 +31,27 @@ Work of Scope:
     Activate the environtment:
 
     ``` cmd
-    .venv\Script\activate.bat
+    .venv\Scripts\activate.bat
     ```
 
 3. Install requirements
+
+    For production:
 
     ``` cmd
     pip install requests pycryptodome pymodbus
     ```
 
+    For testing:
+
+    ``` cmd
+    pip install flask
+    ```
+
 4. Activate the environtment every time starting the work on new shell/ide:
 
     ``` cmd
-    .venv\Script\activate.bat
+    .venv\Scripts\activate.bat
     ```
 
 ## Notes

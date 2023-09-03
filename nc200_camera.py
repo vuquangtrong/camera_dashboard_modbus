@@ -8,6 +8,7 @@ import time
 import requests
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5  # RSA-PSS
+from pymodbus.client.tcp import ModbusTcpClient
 
 
 class NC200_Camera:
@@ -48,7 +49,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
 -----END PUBLIC KEY-----'''
     cipher_rsa = None
 
-    def __init__(self, url="http://192.168.1.168", user="admin", pwd="admin123") -> None:
+    def __init__(self, url="http://192.168.1.168", user="admin", pwd="admin123", server="127.0.0.1") -> None:
         """
         init the object with url and credentials
         default values are used if no param given
@@ -59,6 +60,8 @@ F3wPTUp/+rydh3oBkQIDAQAB
         self.cipher_rsa = PKCS1_v1_5.new(RSA.import_key(self.pub_key))
         self.thread_heartbeat = threading.Thread(target=self.heartbeat)
         self.thread_heartbeat_stop = False
+        self.server = server
+        self.client = None
 
     def encode(self, data):
         """
@@ -86,7 +89,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
             self.url + "/getmsginfo",
             headers=self.headers,
             json=msg,
-            timeout=5 # sec
+            timeout=5  # sec
         )
 
         response = request.json()
@@ -211,3 +214,33 @@ F3wPTUp/+rydh3oBkQIDAQAB
                 return response['message']['value']
 
         return -1
+
+    def modbus_connect(self):
+        self.client = ModbusTcpClient("localhost", port=5001)
+        self.client.connect()
+        # basic test
+        coils = self.client.read_coils(address=0, count=10)
+        discrete_inputs = self.client.read_discrete_inputs(address=0, count=10)
+        holding_registers = self.client.read_holding_registers(address=0, count=10)
+        input_registers = self.client.read_input_registers(address=0, count=10)
+        print("Coils:", coils.bits)
+        print("Discrete Inputs:", discrete_inputs.bits)
+        print("Holding Registers:", holding_registers.registers)
+        print("Input Registers:", input_registers.registers)
+        return self.client.is_socket_open()
+
+    def modbus_disconnect(self):
+        if self.client is not None and self.client.is_socket_open:
+            self.client.close()
+
+    def modbus_set_temp(self, temp):
+        if self.client is not None and self.client.is_socket_open:
+            # set status and read back
+            self.client.write_coil(address=1, value=(temp > 25))
+            result = self.client.read_coils(address=1, count=1)
+            print(result.bits[0])
+
+            # set register and read back
+            self.client.write_register(address=1, value=temp)
+            result = self.client.read_holding_registers(address=1, count=1)
+            print(result.registers[0])
