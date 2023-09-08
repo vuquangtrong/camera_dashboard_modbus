@@ -1,41 +1,31 @@
 """
-Main script
+Camera Dashboard
 """
-import signal
-import time
-from nc200_camera import NC200_Camera
 
-request_app_exit = False
+import sys
 
+from PySide6.QtGui import QGuiApplication
+from PySide6.QtQml import QQmlApplicationEngine
 
-def handler(signum, frame):
-    """
-    force app to exit
-    """
-    global request_app_exit
-    res = input("Ctrl-c was pressed. Do you really want to exit? y/n ")
-    if res == 'y':
-        request_app_exit = True
+from model.dashboard import Dashboard
 
+# new application
+app = QGuiApplication(sys.argv)
 
-signal.signal(signal.SIGINT, handler)
+# create backend
+dashboard = Dashboard(app)
 
-camera = NC200_Camera("http://127.0.0.1:5000")
-camera.get_info()
+# create frontend engine
+engine = QQmlApplicationEngine()
+# get frontend context
+context = engine.rootContext()
+# expose backend to frontend, in qml, use the name Dashboard
+context.setContextProperty('Dashboard', dashboard)
+# load UI
+engine.quit.connect(app.quit)
+engine.load('view/main.qml')
+if not engine.rootObjects():
+    sys.exit(-1)
 
-try:
-    if camera.login() == NC200_Camera.ERR_NONE:
-        print("Logged in")
-        camera.get_temperature_at(100, 100)
-        if camera.modbus_connect():
-            print("Connected to Modbus")
-            while not request_app_exit:
-                time.sleep(1)
-                temp = camera.get_temperature_at(100, 100)
-                print("Temp = ", temp)
-                camera.modbus_set_temp(temp)
-except Exception as ex:  # catch all exceptions
-    print(ex)
-
-camera.stop_heartbeat()
-camera.modbus_disconnect()
+# start the app thread
+sys.exit(app.exec())

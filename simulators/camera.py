@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 @app.route('/getmsginfo', methods=['POST'])
 def getmsginfo():
-    print(request.json)
+    # print(request.json)
 
     response = {
         'action': 'response',
@@ -17,16 +17,16 @@ def getmsginfo():
         'retmsg': 'success.'
     }
 
-    if response['cmdtype'] == 501: # login
+    if response['cmdtype'] == 501:  # login
         response['message'] = {
             'token': 'AABBCCDDEEFF'
         }
-    elif response['cmdtype'] == 521: # get temperature at point
+    elif response['cmdtype'] == 521:  # get temperature at point
         response['message'] = {
             'value': random.randrange(20, 30)
         }
 
-    print(response)
+    # print(response)
 
     return json.dumps(response)
 

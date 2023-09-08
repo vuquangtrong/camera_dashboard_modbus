@@ -13,7 +13,7 @@ Work of Scope:
 ## Development
 
 0. Install Git, Python, Visual Studio Code
-   In VSCode, install extensions: Git Graph, Python, Pylance, Pylint, Autopep8, QML Formatter
+   In VSCode, install extensions: Git Graph, Python, Pylance, Pylint, Autopep8, Qt for Python, QML Formatter
 
 1. Clone the repo
 

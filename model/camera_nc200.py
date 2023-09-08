@@ -1,20 +1,24 @@
 """
-NC200 Thermal Camera
+Camera NC200
 """
 
+import time
 import threading
 import base64
-import time
 import requests
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5  # RSA-PSS
 from pymodbus.client.tcp import ModbusTcpClient
+from PySide6.QtCore import QObject, Property, Signal, Slot
 
 
-class NC200_Camera:
+class Camera_NC200(QObject):
     """
-    NC200 Thermal Camera Object
+    Camera NC200 Object
     """
+
+    # SIGNALS
+    temperatureUpdated = Signal()
 
     # enum for commands
     CMD_UNKNOWN = -1
@@ -34,11 +38,11 @@ class NC200_Camera:
     width = 512
     height = 384
 
-    url = "http://192.168.1.168"  # default IP address after reset, can access via Web
+    ip = "192.168.1.168"  # default IP address after reset, can access via Web
+    port = 80  # default HTTP port
     user = "admin"  # default username
     pwd = "admin123"  # default password for admin
-    # default message data type
-    headers = {"Content-Type": "application/json; charset=utf-8"}
+    headers = {"Content-Type": "application/json; charset=utf-8"}  # default message data type
 
     token = ""  # will be changed on every new login
     pub_key = '''-----BEGIN PUBLIC KEY-----
@@ -48,29 +52,50 @@ NFIc/EyzOnLKcUM6Xm+up8K7AymL6TpOpgdtxDB30GlQjK7RNwJLgNSzT7d7OXJq
 F3wPTUp/+rydh3oBkQIDAQAB
 -----END PUBLIC KEY-----'''
     cipher_rsa = None
+    _heartbeat_stop = True
 
-    def __init__(self, url="http://192.168.1.168", user="admin", pwd="admin123", server="127.0.0.1") -> None:
-        """
-        init the object with url and credentials
-        default values are used if no param given
-        """
-        self.url = url
+    modbus_server = "127.0.0.1"
+    modbus_port = 5001
+    modbus_client = None
+
+    # METHODS
+    def __init__(self,
+                 parent: QObject,
+                 ip="192.168.1.168",
+                 port=80,
+                 user="admin",
+                 pwd="admin123",
+                 modbus_server="127.0.0.1",
+                 modbus_port=5001
+                 ):
+        super().__init__(parent)
+
+        # init Camera configs
+        # TODO: check param before assigning
+        self.ip = ip
+        self.port = port
         self.user = user
         self.pwd = pwd
         self.cipher_rsa = PKCS1_v1_5.new(RSA.import_key(self.pub_key))
-        self.thread_heartbeat = threading.Thread(target=self.heartbeat)
-        self.thread_heartbeat_stop = False
-        self.server = server
-        self.client = None
+        self._thread_heartbeat = threading.Thread(target=self.heartbeat, daemon=True)  # auto-kill
+
+        # init Modbus configs
+        self.modbus_server = modbus_server
+        self.modbus_port = modbus_port
+        self.modbus_register_temperature = 1  # meanning 40001
+
+        # init properties
+        self._temperature = 0
+
+        # start background thread
+        self._thread_query_info = threading.Thread(target=self.query_info, daemon=True)  # auto-kill
+        self._thread_query_info.start()
 
     def encode(self, data):
         """
         encrypt password with RSA public key
         then encode encrypted password with base64
         """
-        if self.cipher_rsa is None:
-            return ""
-
         # for testing with user admin123
         # return "JwO1T3c30qOqJUkyNqo//An1ZopJ2bYZlvkj9H6Cty4kWAHc9N0eYvZnAbFb9H3Jo/hXdCvvYfwQ2+wodJJYaq4+13mu52XTVIanT2ev15aK8Oqw/S4YtMfvbOCAAZnQ+4YKXzvD2Fw71YKKmsfmi4R3Jc4E73I1jeXJId9NZiY="
         return base64.b64encode(self.cipher_rsa.encrypt(data.encode())).decode()
@@ -80,20 +105,15 @@ F3wPTUp/+rydh3oBkQIDAQAB
         post a request with message in json format
         return response in json format also
         """
-        if self.url is None:
-            return {
-                'cmdtype': self.CMD_UNKNOWN
-            }
-
         request = requests.post(
-            self.url + "/getmsginfo",
+            "http://" + self.ip + ":" + str(self.port) + "/getmsginfo",
             headers=self.headers,
             json=msg,
             timeout=5  # sec
         )
 
         response = request.json()
-        print(response)
+        # print(response)
 
         return response
 
@@ -101,7 +121,6 @@ F3wPTUp/+rydh3oBkQIDAQAB
         """
         get general info and settings from camera
         """
-
         # construct message fields
         msg = {
             "action": "request",
@@ -110,7 +129,6 @@ F3wPTUp/+rydh3oBkQIDAQAB
             "message": {
             }
         }
-
         # post request to camera
         self.post(msg)
 
@@ -119,17 +137,14 @@ F3wPTUp/+rydh3oBkQIDAQAB
         send heartbeat every 60 seconds
         should be run on a thread using start_heartbeat 
         """
-        self.thread_heartbeat_stop = False
+        self._heartbeat_stop = False
         seconds = 0
-        while not self.thread_heartbeat_stop:
+        while not self._heartbeat_stop:
             time.sleep(1)
             seconds += 1
 
-            if seconds >= 5:
+            if seconds >= 60:
                 seconds = 0
-
-                if self.url is None:
-                    continue
 
                 msg = {
                     "action": "notify",
@@ -148,13 +163,13 @@ F3wPTUp/+rydh3oBkQIDAQAB
         """
         start a thread to send heartbeat
         """
-        self.thread_heartbeat.start()
+        self._thread_heartbeat.start()
 
     def stop_heartbeat(self):
         """
         stop the thread that sends heartbeat
         """
-        self.thread_heartbeat_stop = True
+        self._heartbeat_stop = True
 
     def login(self):
         """
@@ -179,23 +194,14 @@ F3wPTUp/+rydh3oBkQIDAQAB
             if response['retcode'] == self.ERR_NONE:  # succeeded
                 self.token = response['message']['token']
                 self.start_heartbeat()
-                return self.ERR_NONE
-            else:
-                print(response['retmsg'])
-                return response['retcode']
-        else:
-            return self.ERR_UNCONFIGURED
+                return True
 
-    def get_temperature_at(self, x, y):
+        return False
+
+    def query_temperature_at(self, x, y):
         """
-        get temperature at the cordinate (x,y)
+        query temperature at the cordinate (x,y)
         """
-        if (x < 1 or x > self.width) or (y < 1 or y > self.height):
-            return self.ERR_WRONG_PARAMS
-
-        if (self.url is None) or (self.token == ''):
-            return self.ERR_UNCONFIGURED
-
         msg = {
             "action": "request",
             "cmdtype": self.CMD_TEMP_AT_POINT,
@@ -215,32 +221,57 @@ F3wPTUp/+rydh3oBkQIDAQAB
 
         return -1
 
+    def query_info(self):
+        """
+        Infinite loop to login then query info
+        """
+        while True:
+            time.sleep(1)
+            if self.login():
+                if self.modbus_connect():
+                    time.sleep(1)
+                    while True:
+                        time.sleep(1)
+                        self.set_temperature(self.query_temperature_at(100, 100))
+
+    def get_temperature(self):
+        """
+        get_temperature
+        """
+        return self._temperature
+
+    def set_temperature(self, val):
+        """
+        set_temperature
+        """
+        if val != self._temperature:
+            self._temperature = val
+            self.temperatureUpdated.emit()
+            # forward to modbus
+            self.modbus_set_temperature(self._temperature)
+
     def modbus_connect(self):
-        self.client = ModbusTcpClient("localhost", port=5001)
-        self.client.connect()
-        # basic test
-        coils = self.client.read_coils(address=0, count=10)
-        discrete_inputs = self.client.read_discrete_inputs(address=0, count=10)
-        holding_registers = self.client.read_holding_registers(address=0, count=10)
-        input_registers = self.client.read_input_registers(address=0, count=10)
-        print("Coils:", coils.bits)
-        print("Discrete Inputs:", discrete_inputs.bits)
-        print("Holding Registers:", holding_registers.registers)
-        print("Input Registers:", input_registers.registers)
-        return self.client.is_socket_open()
+        """
+        Connect to Server via Modbus TCP
+        """
+        self.modbus_client = ModbusTcpClient(self.modbus_server, port=self.modbus_port)
+        self.modbus_client.connect()
+        return self.modbus_client.is_socket_open()
 
     def modbus_disconnect(self):
-        if self.client is not None and self.client.is_socket_open:
-            self.client.close()
+        """
+        Disconnect to Server
+        """
+        if self.modbus_client is not None and self.modbus_client.is_socket_open():
+            self.modbus_client.close()
 
-    def modbus_set_temp(self, temp):
-        if self.client is not None and self.client.is_socket_open:
-            # set status and read back
-            self.client.write_coil(address=1, value=(temp > 25))
-            result = self.client.read_coils(address=1, count=1)
-            print(result.bits[0])
+    def modbus_set_temperature(self, temperature):
+        """
+        Write temperature to a register
+        """
+        if self.modbus_client is not None and self.modbus_client.is_socket_open:
+            self.modbus_client.write_register(address=self.modbus_register_temperature, value=temperature)
+            self.modbus_client.read_holding_registers(address=self.modbus_register_temperature, count=1)
 
-            # set register and read back
-            self.client.write_register(address=1, value=temp)
-            result = self.client.read_holding_registers(address=1, count=1)
-            print(result.registers[0])
+    # PROPERTIES
+    temperature = Property(int, fget=get_temperature, notify=temperatureUpdated)
