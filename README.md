@@ -1,25 +1,28 @@
-# NC200_Camera
+# Camera Dashboard
 
 ## Overview
 
-Camera NC200 has dual cameras: Normal and IR.
+A dashboard to show a collection of Thermal Camera with monitoring functions.
 
 Work of Scope:
 
-* Read temperature
+* Connect to Thermal Camera NC200 and read Temperature (min, max)
+* Forward Temperature values to a Server via Modbus TCP
+* When temperature reachs the Threadhold, show a warning
 
 ## Development
 
-0. Install Git, Python
+0. Install Git, Python, Visual Studio Code
+   In VSCode, install extensions: Git Graph, Python, Pylance, Pylint, Autopep8, QML Formatter
 
 1. Clone the repo
 
     ``` cmd
-    git clone https://github.com/vuquangtrong/NC200_Camera
+    git clone https://github.com/vuquangtrong/Camera_Dashboard
     ```
 
     ``` cmd
-    cd NC200_Camera
+    cd Camera_Dashboard
     ```
 
 2. Create a virtual environtment
@@ -36,25 +39,21 @@ Work of Scope:
 
 3. Install requirements
 
-    For production:
+    Install requirements:
 
     ``` cmd
-    pip install requests pycryptodome pymodbus
+    pip install -r requirements.txt
     ```
 
-    For testing:
+    In details, requirements include: `requests` `pycryptodome` `pymodbus` `pyside6`.
 
-    ``` cmd
-    pip install flask
-    ```
+Activate the environtment every time starting the work on new shell/ide:
 
-4. Activate the environtment every time starting the work on new shell/ide:
+``` cmd
+.venv\Scripts\activate.bat
+```
 
-    ``` cmd
-    .venv\Scripts\activate.bat
-    ```
-
-## Notes
+## Technical Notes
 
 * Coding convention
 
@@ -63,3 +62,23 @@ Work of Scope:
 * Password encryption
 
     NC200 uses RSA-PSS, instead of RSA-OAEP, so use `PKCS1_v1_5` cipher.
+
+* Each camera is running in a thread
+
+* For testing, install `flask` to simulate IP-Cam server. Modbus serve is simulated using `pymodbus`.
+  
+  Simulate IP-Cam:
+
+  ``` cmd
+  python simulators\camera.py
+  ```
+
+  Simulate Modbus:
+
+  ``` cmd
+  python simulators\modbus.py
+  ```
+
+## Design
+
+![UI Design](design.drawio.png)
