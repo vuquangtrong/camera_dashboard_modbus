@@ -19,5 +19,6 @@ ApplicationWindow {
         anchors.left: parent.left
         anchors.bottom: parent.bottom
         text: "Cameras: " + Dashboard.cameras.length
+        color:"red"
     }
 }

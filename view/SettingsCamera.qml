@@ -6,6 +6,9 @@ import QtQuick.Controls.Material
 Item {
     Button {
         text: "Add Camera"
-        onClicked: Dashboard.add_camera()
+        onClicked:{
+            Dashboard.edit_camera(-1, 1)
+           // addcamerainfor.visible = true
+        }
     }
 }

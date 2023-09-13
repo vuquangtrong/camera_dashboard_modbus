@@ -21,6 +21,10 @@ class Camera_NC200(QObject):
 
     # SIGNALS
     temperatureUpdated = Signal()
+    cameraInforUpdated1 = Signal()
+    cameraInforUpdated2 = Signal()
+    cameraInforUpdated3 = Signal()
+    cameraInforUpdated4 = Signal()
     alarmInfoUpdate = Signal()
     alarmRulesUpdate = Signal()
 
@@ -108,7 +112,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
 
         # start background thread
         self._thread_query_info = threading.Thread(target=self.query_info, daemon=True)  # auto-kill
-        self._thread_query_info.start()
+        # self._thread_query_info.start()
 
     def encode(self, data):
         """
@@ -132,7 +136,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
         )
 
         response = request.json()
-        print(response)
+        # print(response)
 
         return response
 
@@ -150,6 +154,50 @@ F3wPTUp/+rydh3oBkQIDAQAB
         }
         # post request to camera
         self.post(msg)
+    
+    #get cmr ip
+    def get_camera_ip(self):
+        return self.ip
+    
+    #set cmr ip
+    def set_camera_ip(self, camera_ip):
+        # check validation of data
+        if self.ip != camera_ip:
+            self.ip = camera_ip
+            self.cameraInforUpdated1.emit()
+
+    #get cmr port
+    def get_camera_port(self):
+        return self.port
+    
+    #set cmmr port
+    def set_camera_port(self, camera_port):
+        # check data was changed or not
+        if camera_port != self.port:
+            self.port = camera_port
+            self.cameraInforUpdated2.emit()
+
+    #get modbus ip
+    def get_modbus_ip(self):
+        return self.modbus_server
+    
+    #set modbus ip
+    def set_modbus_ip(self, modbus_ip):
+        # check data was changed or not
+        if self.modbus_server != modbus_ip:
+            self.modbus_server = modbus_ip
+            self.cameraInforUpdated3.emit()
+        
+    #get cmr port
+    def get_modbus_port(self):
+        return self.modbus_port
+    
+    #set cmmr port
+    def set_modbus_port(self, modbus_port_1):
+       #check data was changed or not
+       if self.modbus_port != modbus_port_1:
+            self.modbus_port = modbus_port_1
+            self.cameraInforUpdated4.emit()
 
     def heartbeat(self):
         """
@@ -285,7 +333,6 @@ F3wPTUp/+rydh3oBkQIDAQAB
         while True:
             time.sleep(1)
             if self.login():
-                try:
                     if self.modbus_connect():
                         time.sleep(1)
                         while True:
@@ -295,9 +342,6 @@ F3wPTUp/+rydh3oBkQIDAQAB
                                 self.set_temperature_alarm(self.query_temperature_alarm())
                             except:
                                 print("could not set temperature to modbus")
-                except:
-                    print("Could not connect to modbus server")
-                        
 
     def get_temperature_max(self):
         """
@@ -389,6 +433,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
             #forward to modbus
             self.modbus_update_alarm_info()
 
+
     def modbus_connect(self):
         """
         Connect to Server via Modbus TCP
@@ -448,6 +493,9 @@ F3wPTUp/+rydh3oBkQIDAQAB
             result = self.modbus_client.read_holding_registers(address=self.modbus_register_alarm_setting, count=7)
             print(result.registers)
 
+
+
+
     # PROPERTIES
     temperature_max = Property(float, fget=get_temperature_max, notify=temperatureUpdated)
     temperature_min = Property(float, fget=get_temperature_min, notify=temperatureUpdated)
@@ -459,3 +507,8 @@ F3wPTUp/+rydh3oBkQIDAQAB
     record_enable = Property(int, fset = get_record_enable, notify=alarmInfoUpdate)
     record_type = Property(int, fset = get_record_type, notify=alarmInfoUpdate)
     alarm_output = Property(int, fset = get_alarm_output, notify=alarmInfoUpdate)
+    #need to export property to handler in text field
+    property_camera_ip = Property(str, fset=set_camera_ip, fget=get_camera_ip, notify = cameraInforUpdated1)
+    property_camera_port = Property(int, fset=set_camera_port, fget=get_camera_port,notify=cameraInforUpdated2)
+    property_modbus_ip = Property(str, fset=set_modbus_ip, fget=get_modbus_ip, notify = cameraInforUpdated3)
+    property_modbus_port = Property(int,fset=set_modbus_port, fget=get_modbus_port,notify = cameraInforUpdated4)
