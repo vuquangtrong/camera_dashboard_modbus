@@ -22,7 +22,7 @@ class Dashboard(QObject):
         qmlRegisterType(Camera_NC200, "Camera_NC200", 1, 0, "Camera_NC200")
 
         # attributes
-        self._cameras = [Camera_NC200(self, ip="127.0.0.1", port=5000)]
+        self._cameras = [Camera_NC200(self, ip="192.168.1.173", port=80)]
 
     def get_cameras(self):
         """

@@ -12,10 +12,14 @@ Item {
         border.width: 1
 
         Text {
-            anchors.centerIn: parent
-            text: camera.temperature
-            color: "black"
+            anchors.left: parent.left
+            text: camera.temperature_min
+            color: "green"
         }
-
+        Text {
+            anchors.right: parent.right
+            text: camera.temperature_max
+            color: "red"
+        }
     }
 }

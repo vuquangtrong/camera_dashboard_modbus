@@ -9,6 +9,8 @@ import requests
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5  # RSA-PSS
 from pymodbus.client.tcp import ModbusTcpClient
+from pymodbus.payload import BinaryPayloadBuilder, BinaryPayloadDecoder
+from pymodbus.constants import Endian
 from PySide6.QtCore import QObject, Property, Signal, Slot
 
 
@@ -19,12 +21,17 @@ class Camera_NC200(QObject):
 
     # SIGNALS
     temperatureUpdated = Signal()
+    alarmInfoUpdate = Signal()
+    alarmRulesUpdate = Signal()
 
     # enum for commands
     CMD_UNKNOWN = -1
+    CMD_TEMP_RULES = 4
+    CMD_TEMP_ALARM_INFO = 22
     CMD_INFO = 500
     CMD_LOGIN = 501
     CMD_LOGOUT = 502
+    CMD_TEMP_AT_OBJ = 520
     CMD_TEMP_AT_POINT = 521
     CMD_HEARTBEAT = 9999
 
@@ -57,7 +64,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
     modbus_server = "127.0.0.1"
     modbus_port = 5001
     modbus_client = None
-
+    
     # METHODS
     def __init__(self,
                  parent: QObject,
@@ -82,10 +89,22 @@ F3wPTUp/+rydh3oBkQIDAQAB
         # init Modbus configs
         self.modbus_server = modbus_server
         self.modbus_port = modbus_port
-        self.modbus_register_temperature = 1  # meanning 40001
+        self.modbus_register_max_temp = 0 # meanning 40001
+        self.modbus_register_min_temp = 2
+        self.modbus_register_avg_temp = 4
+        self.modbus_register_alarm_setting = 6
 
         # init properties
-        self._temperature = 0
+        self._temperature_max = 0
+        self._temperature_min = 0
+        self._temperature_avg = 0
+        self._alarm_enable = 0
+        self._flutter_free = 0
+        self._snapshot_enable = 0
+        self._snapshot_type = 0
+        self._record_enable = 0
+        self._record_type = 0
+        self._alarm_output = 0
 
         # start background thread
         self._thread_query_info = threading.Thread(target=self.query_info, daemon=True)  # auto-kill
@@ -113,7 +132,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
         )
 
         response = request.json()
-        # print(response)
+        print(response)
 
         return response
 
@@ -220,6 +239,44 @@ F3wPTUp/+rydh3oBkQIDAQAB
                 return response['message']['value']
 
         return -1
+    
+    def query_temperature_object(self):
+        """
+        query temperature at object
+        """
+        msg = { 
+            "action":"request",
+            "cmdtype": self.CMD_TEMP_AT_OBJ,
+            "sequence":1,
+            "token": self.token,
+            "message":{}
+        }
+
+        response = self.post(msg)
+        if ('cmdtype') in response and response['cmdtype'] == self.CMD_TEMP_AT_OBJ:
+            if response['retcode'] == self.ERR_NONE:
+                return response['message']['global_max_temp'], response['message']['global_min_temp'], response['message']['global_avg_temp']
+
+    def query_temperature_alarm(self):
+        """
+        query alarm setting info
+        """
+        msg = {
+            "action": "request",
+            "cmdtype": self.CMD_TEMP_ALARM_INFO,
+            "message": {
+                "default": 0
+            },
+            "from": "root",
+            "to": "box",
+            "sequence": 37,
+            "token": self.token
+        }
+
+        response = self.post(msg)
+        if ('cmdtype') in response and response['cmdtype'] == self.CMD_TEMP_ALARM_INFO:
+            if response['retcode'] == self.ERR_NONE:
+                return response['message']['alarm_flag'], response['message']['alarm_shake'], response['message']['capture_flag'], response['message']['capture_stream'], response['message']['record_flag'], response['message']['record_stream'], response['message']['output_flag']
 
     def query_info(self):
         """
@@ -228,27 +285,109 @@ F3wPTUp/+rydh3oBkQIDAQAB
         while True:
             time.sleep(1)
             if self.login():
-                if self.modbus_connect():
-                    time.sleep(1)
-                    while True:
+                try:
+                    if self.modbus_connect():
                         time.sleep(1)
-                        self.set_temperature(self.query_temperature_at(100, 100))
+                        while True:
+                            time.sleep(1)
+                            try:
+                                self.set_temperature(self.query_temperature_object())
+                                self.set_temperature_alarm(self.query_temperature_alarm())
+                            except:
+                                print("could not set temperature to modbus")
+                except:
+                    print("Could not connect to modbus server")
+                        
 
-    def get_temperature(self):
+    def get_temperature_max(self):
         """
         get_temperature
         """
-        return self._temperature
+        return self._temperature_max
+    
+    def get_temperature_min(self):
+        """
+        get_temperature
+        """
+        return self._temperature_min
+    
+    def get_temperature_avg(self):
+        """
+        get_temperature
+        """
+        return self._temperature_avg
 
     def set_temperature(self, val):
         """
         set_temperature
         """
-        if val != self._temperature:
-            self._temperature = val
+        val_max, val_min, val_avg = val
+        if val_max != self._temperature_max or val_min != self._temperature_min or val_avg != self._temperature_avg:
+            self._temperature_max = val_max
+            self._temperature_min = val_min
+            self._temperature_avg = val_avg
             self.temperatureUpdated.emit()
             # forward to modbus
-            self.modbus_set_temperature(self._temperature)
+            self.modbus_set_temperature()
+
+    def get_alarm_enable(self):
+        """
+        get_alarm_enable
+        """
+        return self._alarm_enable
+    
+    def get_flutter_free(self):
+        """
+        get_flutter_free
+        """
+        return self._flutter_free
+    
+    def get_snapshot_enable(self):
+        """
+        get_snapshot_enable
+        """
+        return self._snapshot_enable
+    
+    def get_snapshot_type(self):
+        """
+        get_snapshot_type
+        """
+        return self._snapshot_type
+    
+    def get_record_enable(self):
+        """
+        get_record_enable
+        """
+        return self._record_enable
+    
+    def get_record_type(self):
+        """
+        get_record_type
+        """
+        return self._record_type
+    
+    def get_alarm_output(self):
+        """
+        get_alarm_output
+        """
+        return self._alarm_output
+
+    def set_temperature_alarm(self, data):
+        """
+        Set temperature alarm information
+        """
+        alarm_enable, flutter_free, snapshot_enable, snapshot_type, record_enable, record_type, alarm_output = data
+        if alarm_enable != self._alarm_enable or flutter_free != self._flutter_free or snapshot_enable != self._snapshot_enable or snapshot_type != self._snapshot_type or record_enable != self._record_enable or record_type != self._record_type or alarm_output != self._alarm_output:
+            self._alarm_enable = alarm_enable
+            self._flutter_free = flutter_free
+            self._snapshot_enable = snapshot_enable
+            self._snapshot_type = snapshot_type
+            self._record_enable = record_enable
+            self._record_type = record_type
+            self._alarm_output = alarm_output
+            self.alarmInfoUpdate.emit()
+            #forward to modbus
+            self.modbus_update_alarm_info()
 
     def modbus_connect(self):
         """
@@ -265,13 +404,58 @@ F3wPTUp/+rydh3oBkQIDAQAB
         if self.modbus_client is not None and self.modbus_client.is_socket_open():
             self.modbus_client.close()
 
-    def modbus_set_temperature(self, temperature):
+    def modbus_set_temperature(self):
         """
         Write temperature to a register
         """
         if self.modbus_client is not None and self.modbus_client.is_socket_open:
-            self.modbus_client.write_register(address=self.modbus_register_temperature, value=temperature)
-            self.modbus_client.read_holding_registers(address=self.modbus_register_temperature, count=1)
+            builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.LITTLE)
+            builder.add_32bit_float(self._temperature_max)
+            payload = builder.build()
+            print(payload)
+            self.modbus_client.write_register(address=self.modbus_register_max_temp, value=int.from_bytes(payload[0]))
+            self.modbus_client.write_register(address=self.modbus_register_max_temp+1, value=int.from_bytes(payload[1]))
+            res = self.modbus_client.read_holding_registers(address=self.modbus_register_max_temp, count=2)
+            for r in res.registers:
+                print(hex(r))
+            # _builder.add_32bit_float(self._temp_min)
+            # _payload = _builder.build()
+            # self.modbus_client.write_registers(address=self.modbus_register_min_temp, value=_payload)
+            # _builder.add_32bit_float(self._temp_avg)
+            # _payload = _builder.build()
+            # self.modbus_client.write_registers(address=self.modbus_register_avg_temp, value= _payload)
+
+            # Read values in registers
+            # self.modbus_client.read_holding_registers(address=self.modbus_register_max_temp, count=2)
+            # _decoder = BinaryPayloadDecoder.fromRegisters(self.modbus_register_max_temp, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
+            # print(_decoder.decode_32bit_float)
+
+            # self.modbus_client.read_holding_registers(address=self.modbus_register_min_temp, count=2)
+            # self.modbus_client.read_holding_registers(address=self.modbus_register_avg_temp, count=2)
+
+    def modbus_update_alarm_info(self):
+        if self.modbus_client is not None and self.modbus_client.is_socket_open:
+            # Write values to registers
+            self.modbus_client.write_register(address=self.modbus_register_alarm_setting, value=self._alarm_enable)
+            self.modbus_client.write_register(address=self.modbus_register_alarm_setting+1, value=self._flutter_free)
+            self.modbus_client.write_register(address=self.modbus_register_alarm_setting+2, value=self._snapshot_enable)
+            self.modbus_client.write_register(address=self.modbus_register_alarm_setting+3, value=self._snapshot_type)
+            self.modbus_client.write_register(address=self.modbus_register_alarm_setting+4, value=self._record_enable)
+            self.modbus_client.write_register(address=self.modbus_register_alarm_setting+5, value=self._record_type)
+            self.modbus_client.write_register(address=self.modbus_register_alarm_setting+6, value=self._alarm_output)
+        
+            # Read values in registers
+            result = self.modbus_client.read_holding_registers(address=self.modbus_register_alarm_setting, count=7)
+            print(result.registers)
 
     # PROPERTIES
-    temperature = Property(int, fget=get_temperature, notify=temperatureUpdated)
+    temperature_max = Property(float, fget=get_temperature_max, notify=temperatureUpdated)
+    temperature_min = Property(float, fget=get_temperature_min, notify=temperatureUpdated)
+    # temperature_avg = Property(float, fget=get_temperature_avg, notify=temperatureUpdated)
+    alarm_enable = Property(int, fset = get_alarm_enable, notify=alarmInfoUpdate)
+    flutter_free = Property(int, fset = get_flutter_free, notify=alarmInfoUpdate)
+    snapshot_enable = Property(int, fset = get_snapshot_enable, notify=alarmInfoUpdate)
+    snapshot_type = Property(int, fset = get_snapshot_type, notify=alarmInfoUpdate)
+    record_enable = Property(int, fset = get_record_enable, notify=alarmInfoUpdate)
+    record_type = Property(int, fset = get_record_type, notify=alarmInfoUpdate)
+    alarm_output = Property(int, fset = get_alarm_output, notify=alarmInfoUpdate)
