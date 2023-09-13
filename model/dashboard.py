@@ -19,10 +19,15 @@ class Dashboard(QObject):
         super().__init__(parent)
 
         # register new types to QML
-        qmlRegisterType(Camera_NC200, "Camera_NC200", 1, 0, "Camera_NC200")
+        qmlRegisterType(Camera_NC200, "Camera_NC200", 1, 0,"Camera_NC200")
 
         # attributes
-        self._cameras = [Camera_NC200(self, ip="127.0.0.1", port=5000)]
+
+      # self._cameras = [Camera_NC200(self, ip="127.0.0.1", port=5000)] need to comment because it will override CameraNC200 class
+        self._cameras = [Camera_NC200(self)]
+        self._edittingCamera = Camera_NC200(self)
+        self._isEditting = 0
+        self._edittingIndex = None
 
     def get_cameras(self):
         """
@@ -30,13 +35,48 @@ class Dashboard(QObject):
         """
         return self._cameras
 
-    @Slot()
-    def add_camera(self):
+    def get_editting_camera(self):
+        return self._edittingCamera
+
+    def get_editting_index(self):
+        return self._edittingIndex
+    
+    def get_is_editting(self):
+        return self._isEditting
+    
+
+    #@Slot()
+    #def add_camera(self):
         """
         show a dialog to enter new camera setting
         """
-        self._cameras.append(Camera_NC200(self, ip="127.0.0.1", port=5000))
-        self.camerasUpdated.emit()
+       # self._cameras.append(Camera_NC200(self, ip="127.0.0.1", port=5000)) # when added new camera, it will automatically connect with IP address and port via CAMERA NC200.py and also
+       # self.camerasUpdated.emit() #append function is adding the new element is an object and it will be added to the last of the list
+    
+    @Slot(int, int)
+    def edit_camera(self, index, is_editting):
+        self._edittingIndex = index
+        self._isEditting = is_editting
 
+        if is_editting == 1:
+            if index == -1:
+                self._edittingCamera = Camera_NC200(self)
+            else:
+               self._edittingCamera = self.cameras[index]
+        self.camerasUpdated.emit()
+        
+
+    @Slot(int)
+    def save_camera(self, index):
+        if index == -1:
+            self._cameras.append(self._edittingCamera)
+        self.camerasUpdated.emit()
+        #else:
+            #self._camera.insert(self.edittingCamera, index)   
     # PROPERTIES
+    
     cameras = Property("QVariantList", fget=get_cameras, notify=camerasUpdated)
+    edittingCamera = Property(Camera_NC200, fget=get_editting_camera, notify=camerasUpdated)
+    edittingIndex = Property(int, fget = get_editting_index, notify = camerasUpdated)
+    isEditting = Property(int, fget = get_is_editting, notify = camerasUpdated)
+
