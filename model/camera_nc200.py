@@ -12,7 +12,7 @@ from pymodbus.client.tcp import ModbusTcpClient
 from pymodbus.payload import BinaryPayloadBuilder, BinaryPayloadDecoder
 from pymodbus.constants import Endian
 from PySide6.QtCore import QObject, Property, Signal, Slot
-
+import json
 
 class Camera_NC200(QObject):
     """
@@ -68,7 +68,8 @@ F3wPTUp/+rydh3oBkQIDAQAB
     modbus_server = "127.0.0.1"
     modbus_port = 5001
     modbus_client = None
-    
+    query_status = 0
+
     # METHODS
     def __init__(self,
                  parent: QObject,
@@ -109,10 +110,11 @@ F3wPTUp/+rydh3oBkQIDAQAB
         self._record_enable = 0
         self._record_type = 0
         self._alarm_output = 0
+        self.query_status = 1
 
         # start background thread
         self._thread_query_info = threading.Thread(target=self.query_info, daemon=True)  # auto-kill
-        # self._thread_query_info.start()
+        self._thread_query_info.start()
 
     def encode(self, data):
         """
@@ -332,16 +334,38 @@ F3wPTUp/+rydh3oBkQIDAQAB
         """
         while True:
             time.sleep(1)
-            if self.login():
-                    if self.modbus_connect():
-                        time.sleep(1)
-                        while True:
+            while self.query_status == 1:
+                if self.login():
+                        if self.modbus_connect():
                             time.sleep(1)
-                            try:
-                                self.set_temperature(self.query_temperature_object())
-                                self.set_temperature_alarm(self.query_temperature_alarm())
-                            except:
-                                print("could not set temperature to modbus")
+                            while self.query_status == 1:
+                                try:
+                                    self.set_temperature(self.query_temperature_object())
+                                    self.set_temperature_alarm(self.query_temperature_alarm())
+                                except:
+                                    print("could not set temperature to modbus")
+    def query_info(self):
+        """
+        Infinite loop to login then query info
+        """
+        while True:
+            time.sleep(1)
+            print("query_Status = 0")
+            while self.query_status == 1:
+                time.sleep(1)
+
+    def start_query(self):
+        """
+        start querying information
+        """
+        self.query_status = 1
+
+    def stop_query(self):
+        """
+        stop querying information
+        """
+        self.query_status = 0
+
 
     def get_temperature_max(self):
         """
@@ -433,6 +457,11 @@ F3wPTUp/+rydh3oBkQIDAQAB
             #forward to modbus
             self.modbus_update_alarm_info()
 
+    def get_query_status(self):
+        """
+        get query status
+        """
+        return self.query_status
 
     def modbus_connect(self):
         """
@@ -493,7 +522,27 @@ F3wPTUp/+rydh3oBkQIDAQAB
             result = self.modbus_client.read_holding_registers(address=self.modbus_register_alarm_setting, count=7)
             print(result.registers)
 
-
+    def save_camera_to_database(self, index):
+        try:
+            with open("database\cameras.json", "r") as file:
+                json_cameras = json.load(file)
+                if index != -1:
+                    for camera in json_cameras["cameras"]:
+                        print(camera["index"])
+                        print(index)
+                        if camera["index"] == index:
+                            camera["ip"] = self.ip
+                            camera["port"] = self.port
+                            camera["modbus_port"] = self.modbus_port
+                            camera["modbus_ip"] = self.modbus_server
+                else:
+                    print(len(json_cameras["cameras"]))             
+                    camera = {'ip': self.ip, 'port': self.port, 'modbus_port': self.modbus_port, 'modbus_ip': self.modbus_server, 'index': len(json_cameras["cameras"])}
+                    json_cameras["cameras"].append(camera)
+            with open('database\cameras.json', "w") as file:
+                json.dump(json_cameras, file, indent=2)
+        except:
+            print("Could not save camera to database")
 
 
     # PROPERTIES

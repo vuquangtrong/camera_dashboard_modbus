@@ -163,7 +163,7 @@ Popup{
                             camera.property_camera_ip = textfield_camera_ip.text
                             camera.property_camera_port = textfield_camera_port.text
                             camera.property_modbus_ip = textfield_modbus_ip.text
-                            camera.property_modbus_port= textfield_modbus_port.text
+                            camera.property_modbus_port = textfield_modbus_port.text
                             
                             //need to save the data
                             Dashboard.save_camera(index)
