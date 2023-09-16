@@ -336,6 +336,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
             time.sleep(1)
             while self.query_status == 1:
                 if self.login():
+                        time.sleep(1)
                         if self.modbus_connect():
                             time.sleep(1)
                             while self.query_status == 1:
@@ -344,16 +345,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
                                     self.set_temperature_alarm(self.query_temperature_alarm())
                                 except:
                                     print("could not set temperature to modbus")
-    def query_info(self):
-        """
-        Infinite loop to login then query info
-        """
-        while True:
-            time.sleep(1)
-            print("query_Status = 0")
-            while self.query_status == 1:
-                time.sleep(1)
-
+                                    
     def start_query(self):
         """
         start querying information
