@@ -16,6 +16,7 @@ ApplicationWindow {
     }
 
     Text {
+        anchors.margins: 10
         anchors.left: parent.left
         anchors.bottom: parent.bottom
         text: "Cameras: " + Dashboard.cameras.length
