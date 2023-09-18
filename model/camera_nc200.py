@@ -345,7 +345,10 @@ F3wPTUp/+rydh3oBkQIDAQAB
                                     self.set_temperature_alarm(self.query_temperature_alarm())
                                 except:
                                     print("could not set temperature to modbus")
-                                    
+                else:
+                    print("login failed")
+                    self.query_status == 0
+
     def start_query(self):
         """
         start querying information

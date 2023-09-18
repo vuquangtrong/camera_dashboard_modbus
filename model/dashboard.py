@@ -72,8 +72,10 @@ class Dashboard(QObject):
                 self._edittingCamera = Camera_NC200(self)
                 self._edittingCamera.stop_query()
             else:
-               self._edittingCamera = self.cameras[index]
-               self._edittingCamera.stop_query()
+                self._edittingCamera = self.cameras[index]
+                self._edittingCamera.stop_query()
+        else:
+            self._edittingCamera.start_query()
         self.camerasUpdated.emit()
         
 
@@ -82,7 +84,6 @@ class Dashboard(QObject):
         if index == -1:
             self._cameras.append(self._edittingCamera)
         self.camerasUpdated.emit()
-        self._edittingCamera.start_query()
         self._edittingCamera.save_camera_to_database(index)
         #else:
             #self._camera.insert(self.edittingCamera, index)   
