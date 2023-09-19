@@ -118,6 +118,8 @@ F3wPTUp/+rydh3oBkQIDAQAB
         self._alarm_temperature_low = 0
         self._alarm_signal_high = 0
         self._alarm_signal_low = 0
+        self._qtime_high = 0   # dejiter
+        self._qtime_low = 0    # dejiter
 
         # start background thread
         self._thread_query_info = threading.Thread(target=self.query_info, daemon=True)  # auto-kill
@@ -452,64 +454,27 @@ F3wPTUp/+rydh3oBkQIDAQAB
         Set temperature alarm information
         """
         if self._alarm_enable and self._alarm_flag_high and self._temperature_max >= self._alarm_temperature_high:
-            if not self._alarm_signal_high and self._alarm_high_stop:
-                # print("Start thread to active alarm")
-                self._alarm_high_stop = False
-                self._thread_high_alarm = threading.Thread(target=self.set_alarm_signal_high, daemon=True)
-                self._thread_high_alarm.start()
-            # else:
-            #     print("Wait qualification time or Alarm activating")
+            if self._alarm_signal_high != 1:
+                self._qtime_high += 1
         else:
-            # print("Alarm deactivating")
+            self._qtime_high = 0
             self._alarm_signal_high = 0
-            self._alarm_high_stop = True
+
+        if self._qtime_high == self._alarm_shake:
+            self._alarm_signal_high = 1
 
         if self._alarm_enable and self._alarm_flag_low and self._temperature_min <= self._alarm_temperature_low:
-            if not self._alarm_signal_low and self._alarm_low_stop:
-                # print("Start thread to active alarm")
-                self._alarm_low_stop = False
-                self._thread_low_alarm = threading.Thread(target=self.set_alarm_signal_low, daemon=True)
-                self._thread_low_alarm.start()
-            # else:
-            #     print("Wait qualification time or Alarm activating")
+            if self._alarm_signal_low != 1:
+                self._qtime_low += 1
         else:
-            # print("Alarm deactivating")
+            self._qtime_low = 0
             self._alarm_signal_low = 0
-            self._alarm_low_stop = True
+
+        if self._qtime_low == self._alarm_shake:
+            self._alarm_signal_low = 1
 
         self.alarmSignalsUpdated.emit()
         self.modbus_update_alarm_signal()
-
-    def set_alarm_signal_high(self):
-        """
-        Set alarm high temp signal
-        """
-        qualification_time = 0
-        # print("Thread started")
-        while not self._alarm_high_stop and qualification_time != self._alarm_shake:
-            time.sleep(1)
-            qualification_time += 1
-            # print(qualification_time)
-        # print("Thread stop")
-        if qualification_time == self._alarm_shake:
-            self._alarm_signal_high = 1
-            # print("Alarm activating")
-
-    def set_alarm_signal_low(self):
-        """
-        Set alarm low temp signal
-        """
-        qualification_time = 0
-        # print("Thread started")
-        while not self._alarm_low_stop and qualification_time != self._alarm_shake:
-            time.sleep(1)
-            qualification_time += 1
-            # print(qualification_time)
-        # print("Thread stop")
-        if qualification_time == self._alarm_shake:
-            self._alarm_signal_low = 1
-            # print("Alarm activating")
-
 
     def modbus_connect(self):
         """
