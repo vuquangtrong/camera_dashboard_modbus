@@ -25,7 +25,7 @@ class Camera_NC200(QObject):
     cameraInforUpdated2 = Signal()
     cameraInforUpdated3 = Signal()
     cameraInforUpdated4 = Signal()
-    temperatureTrackingUpdated = Signal()
+    alarmTrackingUpdated = Signal()
     alarmSignalsUpdated = Signal()
 
     # enum for commands
@@ -64,8 +64,8 @@ F3wPTUp/+rydh3oBkQIDAQAB
 -----END PUBLIC KEY-----'''
     cipher_rsa = None
     _heartbeat_stop = True
-    _high_alarm_stop = True
-    _low_alarm_stop = True
+    _alarm_high_stop = True
+    _alarm_low_stop = True
 
     modbus_server = "127.0.0.1"
     modbus_port = 5001
@@ -95,24 +95,29 @@ F3wPTUp/+rydh3oBkQIDAQAB
         # init Modbus configs
         self.modbus_server = modbus_server
         self.modbus_port = modbus_port
-        self.modbus_register_max_temp = 0 # meanning 40001
-        self.modbus_register_min_temp = 2
-        self.modbus_register_avg_temp = 4
-        self.modbus_register_temp_tracking = 6
-        self.modbus_register_alarm_signal = 15
+        self.modbus_register_temp_max = 1 # meanning 40001
+        self.modbus_register_temp_min = 3
+        # self.modbus_register_avg_temp = 4
+        self.modbus_register_alarm_enable = 5
+        self.modbus_register_alarm_high = 6
+        self.modbus_register_alarm_low = 7
+        self.modbus_register_alarm_signal_high = 5
+        self.modbus_register_alarm_signal_low = 6
+        self.modbus_register_alarm_temp_high = 7
+        self.modbus_register_alarm_temp_low = 10
 
         # init properties
         self._temperature_max = 0
         self._temperature_min = 0
-        self._temperature_avg = 0
+        # self._temperature_avg = 0
         self._alarm_enable = 0
         self._alarm_shake = 0
-        self._temperature_high_flag = 0
-        self._temperature_low_flag = 0
-        self._temperature_high_alarm = 0
-        self._temperature_low_alarm = 0
-        self._alarm_high_signal = 0
-        self._alarm_low_signal = 0
+        self._alarm_flag_high = 0
+        self._alarm_flag_low = 0
+        self._alarm_temperature_high = 0
+        self._alarm_temperature_low = 0
+        self._alarm_signal_high = 0
+        self._alarm_signal_low = 0
 
         # start background thread
         self._thread_query_info = threading.Thread(target=self.query_info, daemon=True)  # auto-kill
@@ -331,23 +336,6 @@ F3wPTUp/+rydh3oBkQIDAQAB
                 message = response['message']
                 return message['trace_flag'], message['alarm_shake'], message['high_flag'], message['low_flag'], message['high_temp'], message['low_temp']
 
-    # def query_alarm(self):
-    #     """
-    #     query alarm for temperature spot tracking
-    #     """
-    #     msg = { 
-    #         "action":"request",
-    #         "cmdtype": self.CMD_TEMP_ALARM,
-    #         "sequence":1,
-    #         "token":self.token,
-    #         "message":{}
-    #     }
-    #     response = self.post(msg)
-    #     if ('cmdtype') in response and response['cmdtype'] == self.CMD_TEMP_ALARM:
-    #         if response['retcode'] == self.ERR_NONE:
-    #             message = response['message']
-    #             return message['flag'], message['alarm_shake'], message['alarm_out_flag'], message['alarm_out_delay'], message['output_flag'], message['output_hold']
-
     def query_info(self):
         """
         Infinite loop to login then query info
@@ -361,7 +349,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
                             time.sleep(1)
                             try:
                                 self.set_temperature(self.query_temperature_object())
-                                self.set_temperature_tracking(self.query_temperature_tracking())
+                                self.set_alarm_temperature_tracking(self.query_temperature_tracking())
                                 # print(self.query_temperature_tracking())
                                 # print(self.query_alarm())
 
@@ -381,24 +369,25 @@ F3wPTUp/+rydh3oBkQIDAQAB
         """
         return self._temperature_min
     
-    def get_temperature_avg(self):
-        """
-        get_temperature
-        """
-        return self._temperature_avg
+    # def get_temperature_avg(self):
+    #     """
+    #     get_temperature
+    #     """
+    #     return self._temperature_avg
 
     def set_temperature(self, val):
         """
         set_temperature
         """
         val_max, val_min, val_avg = val
-        if val_max != self._temperature_max or val_min != self._temperature_min or val_avg != self._temperature_avg:
+        # if val_max != self._temperature_max or val_min != self._temperature_min or val_avg != self._temperature_avg:
+        if val_max != self._temperature_max or val_min != self._temperature_min:
             self._temperature_max = val_max
             self._temperature_min = val_min
-            self._temperature_avg = val_avg
+            # self._temperature_avg = val_avg
             self.temperatureUpdated.emit()
             # forward to modbus
-            self.modbus_set_temperature()
+            self.modbus_update_temperature()
 
     def get_alarm_enable(self):
         """
@@ -406,120 +395,120 @@ F3wPTUp/+rydh3oBkQIDAQAB
         """
         return self._alarm_enable
     
-    def get_temperature_high_flag(self):
+    def get_alarm_flag_high(self):
         """
         get_alarm high temp flag
         """
-        return self._temperature_high_flag
+        return self._alarm_flag_high
     
-    def get_temperature_low_flag(self):
+    def get_alarm_flag_low(self):
         """
         get_alarm low temp flag
         """
-        return self._temperature_low_flag
+        return self._alarm_flag_low
 
-    def get_temperature_high_alarm(self):
+    def get_alarm_temperature_high(self):
         """
         get_alarm high temp
         """
-        return self._temperature_high_alarm
+        return self._alarm_temperature_high
     
-    def get_temperature_low_alarm(self):
+    def get_alarm_temperature_low(self):
         """
         get_alarm low temp
         """
-        return self._temperature_low_alarm
+        return self._alarm_temperature_low
 
-    def set_temperature_tracking(self, data):
+    def set_alarm_temperature_tracking(self, data):
         """
         Set temperature alarm information
         """
         trace_enable, alarm_shake, high_flag, low_flag, high_temp, low_temp = data
-        if trace_enable != self._alarm_enable or alarm_shake != self._alarm_shake or high_flag != self._temperature_high_flag or low_flag != self._temperature_low_flag or high_temp != self._temperature_high_alarm or low_temp != self._temperature_low_alarm:
+        if trace_enable != self._alarm_enable or alarm_shake != self._alarm_shake or high_flag != self._alarm_flag_high or low_flag != self._alarm_flag_low or high_temp != self._alarm_temperature_high or low_temp != self._alarm_temperature_low:
             self._alarm_enable = trace_enable
             self._alarm_shake = alarm_shake
-            self._temperature_high_flag = high_flag
-            self._temperature_low_flag = low_flag
-            self._temperature_high_alarm = high_temp
-            self._temperature_low_alarm = low_temp
-            self.temperatureTrackingUpdated.emit()
+            self._alarm_flag_high = high_flag
+            self._alarm_flag_low = low_flag
+            self._alarm_temperature_high = high_temp
+            self._alarm_temperature_low = low_temp
+            self.alarmTrackingUpdated.emit()
             #forward to modbus
-            self.modbus_update_temperature_tracking()
+            self.modbus_update_alarm_tracking()
 
-    def get_alarm_high_signal(self):
+    def get_alarm_signal_high(self):
         """
         get_alarm high temp signal
         """
-        return self._alarm_high_signal
+        return self._alarm_signal_high
     
-    def get_alarm_low_signal(self):
+    def get_alarm_signal_low(self):
         """
         get_alarm low temp signal
         """
-        return self._alarm_low_signal
+        return self._alarm_signal_low
 
     def set_alarm_signal(self):
         """
         Set temperature alarm information
         """
-        if self._alarm_enable and self._temperature_high_flag and self._temperature_max >= self._temperature_high_alarm:
-            if not self._alarm_high_signal and self._high_alarm_stop:
-                print("Start thread to active alarm")
-                self._high_alarm_stop = False
-                self._thread_high_alarm = threading.Thread(target=self.set_alarm_high_signal, daemon=True)
+        if self._alarm_enable and self._alarm_flag_high and self._temperature_max >= self._alarm_temperature_high:
+            if not self._alarm_signal_high and self._alarm_high_stop:
+                # print("Start thread to active alarm")
+                self._alarm_high_stop = False
+                self._thread_high_alarm = threading.Thread(target=self.set_alarm_signal_high, daemon=True)
                 self._thread_high_alarm.start()
-            else:
-                print("Wait qualification time or Alarm activating")
+            # else:
+            #     print("Wait qualification time or Alarm activating")
         else:
-            print("Alarm deactivating")
-            self._alarm_high_signal = 0
-            self._high_alarm_stop = True
+            # print("Alarm deactivating")
+            self._alarm_signal_high = 0
+            self._alarm_high_stop = True
 
-        if self._alarm_enable and self._temperature_low_flag and self._temperature_min <= self._temperature_low_alarm:
-            if not self._alarm_low_signal and self._low_alarm_stop:
-                print("Start thread to active alarm")
-                self._low_alarm_stop = False
-                self._thread_low_alarm = threading.Thread(target=self.set_alarm_low_signal, daemon=True)
+        if self._alarm_enable and self._alarm_flag_low and self._temperature_min <= self._alarm_temperature_low:
+            if not self._alarm_signal_low and self._alarm_low_stop:
+                # print("Start thread to active alarm")
+                self._alarm_low_stop = False
+                self._thread_low_alarm = threading.Thread(target=self.set_alarm_signal_low, daemon=True)
                 self._thread_low_alarm.start()
-            else:
-                print("Wait qualification time or Alarm activating")
+            # else:
+            #     print("Wait qualification time or Alarm activating")
         else:
-            print("Alarm deactivating")
-            self._alarm_low_signal = 0
-            self._low_alarm_stop = True
+            # print("Alarm deactivating")
+            self._alarm_signal_low = 0
+            self._alarm_low_stop = True
 
         self.alarmSignalsUpdated.emit()
         self.modbus_update_alarm_signal()
 
-    def set_alarm_high_signal(self):
+    def set_alarm_signal_high(self):
         """
         Set alarm high temp signal
         """
         qualification_time = 0
-        print("Thread started")
-        while not self._high_alarm_stop and qualification_time != self._alarm_shake:
+        # print("Thread started")
+        while not self._alarm_high_stop and qualification_time != self._alarm_shake:
             time.sleep(1)
             qualification_time += 1
-            print(qualification_time)
-        print("Thread stop")
+            # print(qualification_time)
+        # print("Thread stop")
         if qualification_time == self._alarm_shake:
-            self._alarm_high_signal = 1
-            print("Alarm activating")
+            self._alarm_signal_high = 1
+            # print("Alarm activating")
 
-    def set_alarm_low_signal(self):
+    def set_alarm_signal_low(self):
         """
         Set alarm low temp signal
         """
         qualification_time = 0
-        print("Thread started")
-        while not self._low_alarm_stop and qualification_time != self._alarm_shake:
+        # print("Thread started")
+        while not self._alarm_low_stop and qualification_time != self._alarm_shake:
             time.sleep(1)
             qualification_time += 1
-            print(qualification_time)
-        print("Thread stop")
+            # print(qualification_time)
+        # print("Thread stop")
         if qualification_time == self._alarm_shake:
-            self._alarm_low_signal = 1
-            print("Alarm activating")
+            self._alarm_signal_low = 1
+            # print("Alarm activating")
 
 
     def modbus_connect(self):
@@ -537,7 +526,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
         if self.modbus_client is not None and self.modbus_client.is_socket_open():
             self.modbus_client.close()
 
-    def modbus_set_temperature(self):
+    def modbus_update_temperature(self):
         """
         Write temperature to a register
         """
@@ -545,72 +534,84 @@ F3wPTUp/+rydh3oBkQIDAQAB
             builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.LITTLE)
             builder.add_32bit_float(self._temperature_max)
             payload = builder.build()
-            # print(payload)
-            self.modbus_client.write_register(address=self.modbus_register_max_temp, value=int.from_bytes(payload[0]))
-            self.modbus_client.write_register(address=self.modbus_register_max_temp+1, value=int.from_bytes(payload[1]))
-            # res = self.modbus_client.read_holding_registers(address=self.modbus_register_max_temp, count=2)
-            # for r in res.registers:
-            #     print(hex(r))
-            # _builder.add_32bit_float(self._temp_min)
-            # _payload = _builder.build()
-            # self.modbus_client.write_registers(address=self.modbus_register_min_temp, value=_payload)
-            # _builder.add_32bit_float(self._temp_avg)
-            # _payload = _builder.build()
-            # self.modbus_client.write_registers(address=self.modbus_register_avg_temp, value= _payload)
+            self.modbus_client.write_register(address=self.modbus_register_temp_max, value=int.from_bytes(payload[0]))
+            self.modbus_client.write_register(address=self.modbus_register_temp_max+1, value=int.from_bytes(payload[1]))
+
+            builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.LITTLE)
+            builder.add_32bit_float(self._temperature_min)
+            payload = builder.build()
+            self.modbus_client.write_register(address=self.modbus_register_temp_min, value=int.from_bytes(payload[0]))
+            self.modbus_client.write_register(address=self.modbus_register_temp_min+1, value=int.from_bytes(payload[1]))
 
             # Read values in registers
-            # self.modbus_client.read_holding_registers(address=self.modbus_register_max_temp, count=2)
-            # _decoder = BinaryPayloadDecoder.fromRegisters(self.modbus_register_max_temp, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
-            # print(_decoder.decode_32bit_float)
+            value = self.modbus_client.read_holding_registers(address=self.modbus_register_temp_max, count=2)
+            decoder = BinaryPayloadDecoder.fromRegisters(value.registers, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
+            value = decoder.decode_32bit_float()
+            # print(value)
 
-            # self.modbus_client.read_holding_registers(address=self.modbus_register_min_temp, count=2)
-            # self.modbus_client.read_holding_registers(address=self.modbus_register_avg_temp, count=2)
+            value = self.modbus_client.read_holding_registers(address=self.modbus_register_temp_min, count=2)
+            decoder = BinaryPayloadDecoder.fromRegisters(value.registers, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
+            value = decoder.decode_32bit_float()
+            # print(value)
 
-    def modbus_update_temperature_tracking(self):
+    def modbus_update_alarm_tracking(self):
         """
         Write temperature tracking to a register
         """
         if self.modbus_client is not None and self.modbus_client.is_socket_open:
             # Write values to registers
-            self.modbus_client.write_register(address=self.modbus_register_temp_tracking, value=self._alarm_enable)
-            self.modbus_client.write_register(address=self.modbus_register_temp_tracking+1, value=self._temperature_high_flag)
-            self.modbus_client.write_register(address=self.modbus_register_temp_tracking+2, value=self._temperature_low_flag)
+            self.modbus_client.write_register(address=self.modbus_register_alarm_enable, value=self._alarm_enable)
+            self.modbus_client.write_register(address=self.modbus_register_alarm_high, value=self._alarm_flag_high)
+            self.modbus_client.write_register(address=self.modbus_register_alarm_low, value=self._alarm_flag_low)
 
             builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.LITTLE)
-            builder.add_32bit_float(self._temperature_high_alarm)
+            builder.add_32bit_float(self._alarm_temperature_high)
             payload = builder.build()
-            self.modbus_client.write_register(address=self.modbus_register_temp_tracking+3, value=int.from_bytes(payload[0]))
-            self.modbus_client.write_register(address=self.modbus_register_temp_tracking+4, value=int.from_bytes(payload[1]))
-            builder.add_32bit_float(self._temperature_low_alarm)
+            self.modbus_client.write_register(address=self.modbus_register_alarm_temp_high, value=int.from_bytes(payload[0]))
+            self.modbus_client.write_register(address=self.modbus_register_alarm_temp_high+1, value=int.from_bytes(payload[1]))
+
+            builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.LITTLE)
+            builder.add_32bit_float(self._alarm_temperature_low)
             payload = builder.build()
-            self.modbus_client.write_register(address=self.modbus_register_temp_tracking+5, value=int.from_bytes(payload[0]))
-            self.modbus_client.write_register(address=self.modbus_register_temp_tracking+6, value=int.from_bytes(payload[1]))
-        
-            # Read values in registers
-            result = self.modbus_client.read_holding_registers(address=self.modbus_register_temp_tracking, count=1)
-            # print(result.registers)
+            self.modbus_client.write_register(address=self.modbus_register_alarm_temp_low, value=int.from_bytes(payload[0]))
+            self.modbus_client.write_register(address=self.modbus_register_alarm_temp_low+1, value=int.from_bytes(payload[1]))
+
+            # # Read values in registers
+            # alarm_enable = self.modbus_client.read_holding_registers(address=self.modbus_register_alarm_enable, count=1)
+            # alarm_high = self.modbus_client.read_holding_registers(address=self.modbus_register_alarm_high, count=1)
+            # alarm_low = self.modbus_client.read_holding_registers(address=self.modbus_register_alarm_low, count=1)
+
+            value = self.modbus_client.read_holding_registers(address=self.modbus_register_alarm_temp_high, count=2)
+            decoder = BinaryPayloadDecoder.fromRegisters(value.registers, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
+            value = decoder.decode_32bit_float()
+            print(value)
+
+            value = self.modbus_client.read_holding_registers(address=self.modbus_register_alarm_temp_low, count=2)
+            decoder = BinaryPayloadDecoder.fromRegisters(value.registers, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
+            value = decoder.decode_32bit_float()
+            print(value)
 
     def modbus_update_alarm_signal(self):
         if self.modbus_client is not None and self.modbus_client.is_socket_open:
             # Write values to registers
-            self.modbus_client.write_register(address=self.modbus_register_alarm_signal, value=self._alarm_high_signal)
-            self.modbus_client.write_register(address=self.modbus_register_alarm_signal+1, value=self._alarm_low_signal)
+            self.modbus_client.write_register(address=self.modbus_register_alarm_signal_high, value=self._alarm_signal_high)
+            self.modbus_client.write_register(address=self.modbus_register_alarm_signal_low, value=self._alarm_signal_low)
 
-            # Read values in registers
-            result = self.modbus_client.read_holding_registers(address=self.modbus_register_alarm_signal, count=2)
-            # print(result.registers)
+            # # Read values in registers
+            # signal_high = self.modbus_client.read_holding_registers(address=self.modbus_register_alarm_signal_high, count=1)
+            # signal_low = self.modbus_client.read_holding_registers(address=self.modbus_register_alarm_signal_low, count=1)
 
     # PROPERTIES
     temperature_max = Property(float, fget=get_temperature_max, notify=temperatureUpdated)
     temperature_min = Property(float, fget=get_temperature_min, notify=temperatureUpdated)
     # temperature_avg = Property(float, fget=get_temperature_avg, notify=temperatureUpdated)
-    alarm_enable = Property(int, fget = get_alarm_enable, notify=temperatureTrackingUpdated)
-    temperature_high_flag = Property(int, fget=get_temperature_high_flag, notify=temperatureTrackingUpdated)
-    temperature_low_flag = Property(int, fget=get_temperature_low_flag, notify=temperatureTrackingUpdated)
-    temperature_high_alarm = Property(float, fget=get_temperature_high_alarm, notify=temperatureTrackingUpdated)
-    temperature_low_alarm = Property(float, fget=get_temperature_low_alarm, notify=temperatureTrackingUpdated)
-    alarm_high_signal = Property(int,fget=get_alarm_high_signal, notify=alarmSignalsUpdated)
-    alarm_low_signal = Property(int,fget=get_alarm_low_signal, notify=alarmSignalsUpdated)
+    alarm_enable = Property(int, fget = get_alarm_enable, notify=alarmTrackingUpdated)
+    alarm_flag_high = Property(int, fget=get_alarm_flag_high, notify=alarmTrackingUpdated)
+    alarm_flag_low = Property(int, fget=get_alarm_flag_low, notify=alarmTrackingUpdated)
+    alarm_temperature_high = Property(float, fget=get_alarm_temperature_high, notify=alarmTrackingUpdated)
+    alarm_temperature_low = Property(float, fget=get_alarm_temperature_low, notify=alarmTrackingUpdated)
+    alarm_signal_high = Property(int,fget=get_alarm_signal_high, notify=alarmSignalsUpdated)
+    alarm_signal_low = Property(int,fget=get_alarm_signal_low, notify=alarmSignalsUpdated)
     #need to export property to handler in text field
     property_camera_ip = Property(str, fset=set_camera_ip, fget=get_camera_ip, notify=cameraInforUpdated1)
     property_camera_port = Property(int, fset=set_camera_port, fget=get_camera_port, notify=cameraInforUpdated2)

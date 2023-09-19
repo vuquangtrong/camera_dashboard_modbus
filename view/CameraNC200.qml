@@ -51,7 +51,7 @@ Item {
                 Text {
                     Layout.topMargin: 4
                     Layout.leftMargin: 30
-                    text: "[H " + camera.alarm_high_signal + "] / [L " + camera.alarm_low_signal + "]"
+                    text: "[H:" + camera.alarm_signal_high + "] [L:" + camera.alarm_signal_low + "]"
                     color: "red"
                 }
             }
@@ -62,7 +62,7 @@ Item {
             Text {
                 Layout.topMargin: 115
                 Layout.leftMargin: 4
-                text: "[" + camera.temperature_low_alarm + "] " + camera.temperature_min
+                text: "[" + camera.alarm_temperature_low + "] " + camera.temperature_min
                 color: "green"
             }
         }
@@ -71,7 +71,7 @@ Item {
             Text {
                 Layout.topMargin: 130
                 Layout.leftMargin: 4
-                text: "[" + camera.temperature_high_alarm + "] " + camera.temperature_max
+                text: "[" + camera.alarm_temperature_high + "] " + camera.temperature_max
                 color: "red"
             }
         }
