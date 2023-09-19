@@ -25,6 +25,7 @@ class Camera_NC200(QObject):
     cameraInforUpdated2 = Signal()
     cameraInforUpdated3 = Signal()
     cameraInforUpdated4 = Signal()
+    cameraInforUpdated5 = Signal()
     alarmInfoUpdate = Signal()
     alarmRulesUpdate = Signal()
 
@@ -198,6 +199,14 @@ F3wPTUp/+rydh3oBkQIDAQAB
        if self.modbus_port != modbus_port_1:
             self.modbus_port = modbus_port_1
             self.cameraInforUpdated4.emit()
+
+    def get_offset_address_register(self):
+        return self.modbus_register_max_temp
+    
+    def set_offset_address_register(self, offset_address_value):
+        if self.modbus_register_max_temp != offset_address_value:
+            self.modbus_register_max_temp = offset_address_value
+            self.cameraInforUpdated5.emit()
 
     def heartbeat(self):
         """
@@ -512,3 +521,4 @@ F3wPTUp/+rydh3oBkQIDAQAB
     property_camera_port = Property(int, fset=set_camera_port, fget=get_camera_port,notify=cameraInforUpdated2)
     property_modbus_ip = Property(str, fset=set_modbus_ip, fget=get_modbus_ip, notify = cameraInforUpdated3)
     property_modbus_port = Property(int,fset=set_modbus_port, fget=get_modbus_port,notify = cameraInforUpdated4)
+    property_offset_address_register = Property(int, fset=set_offset_address_register, fget=get_offset_address_register, notify=cameraInforUpdated5)

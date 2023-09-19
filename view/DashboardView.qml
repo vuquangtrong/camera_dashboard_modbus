@@ -19,7 +19,6 @@ Item {
             topMargin: 1
             model: Dashboard.cameras
             delegate: CameraNC200 {
-               // index: grid.indexAt(posInContentItem.x, posInContentItem.y)
                 width: grid.cellWidth
                 height: grid.cellHeight
                 camera: modelData /// model data = Dashboard.cameras[i] // assign modelData to camera, after that camera.temperature will get the value of each camera
@@ -42,14 +41,14 @@ Item {
             }
         }
     }
-
-
     AddCameraInfor{
+        width: 100
+        height: 100
         id: addcamerainfor
         anchors.centerIn: parent
         camera: Dashboard.edittingCamera
         index: Dashboard.edittingIndex
         visible: Dashboard.isEditting
-
     }
+
 }

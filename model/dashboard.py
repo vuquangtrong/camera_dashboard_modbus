@@ -74,6 +74,13 @@ class Dashboard(QObject):
         #else:
             #self._camera.insert(self.edittingCamera, index)   
     # PROPERTIES
+
+    @Slot(int)
+    def delete_camera(self, index):
+        if index != -1:
+            self.cameras.pop(index)
+        self.camerasUpdated.emit()
+
     
     cameras = Property("QVariantList", fget=get_cameras, notify=camerasUpdated)
     edittingCamera = Property(Camera_NC200, fget=get_editting_camera, notify=camerasUpdated)
