@@ -1,25 +1,11 @@
 {
   "cameras": [
     {
-      "ip": "192.168.1.169",
-      "port": 80,
-      "modbus_ip": "127.0.0.1",
-      "modbus_port": 5001,
-      "index": 0
-    },
-    {
       "ip": "192.168.1.168",
       "port": 80,
       "modbus_port": 5001,
       "modbus_ip": "127.0.0.1",
       "index": 1
-    },
-    {
-      "ip": "192.168.1.102",
-      "port": 80,
-      "modbus_port": 5001,
-      "modbus_ip": "127.0.0.1",
-      "index": 2
     }
   ]
 }
