@@ -213,11 +213,11 @@ F3wPTUp/+rydh3oBkQIDAQAB
             self.cameraInforUpdated4.emit()
 
     def get_offset_address_register(self):
-        return self.modbus_register_max_temp
+        return self.modbus_register_temp_max
     
     def set_offset_address_register(self, offset_address_value):
-        if self.modbus_register_max_temp != offset_address_value:
-            self.modbus_register_max_temp = offset_address_value
+        if self.modbus_register_temp_max != offset_address_value:
+            self.modbus_register_temp_max = offset_address_value
             self.cameraInforUpdated5.emit()
 
     def heartbeat(self):
