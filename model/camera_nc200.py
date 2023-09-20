@@ -460,7 +460,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
             self._qtime_high = 0
             self._alarm_signal_high = 0
 
-        if self._qtime_high == self._alarm_shake:
+        if self._qtime_high >= self._alarm_shake:
             self._alarm_signal_high = 1
 
         if self._alarm_enable and self._alarm_flag_low and self._temperature_min <= self._alarm_temperature_low:
@@ -470,7 +470,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
             self._qtime_low = 0
             self._alarm_signal_low = 0
 
-        if self._qtime_low == self._alarm_shake:
+        if self._qtime_low >= self._alarm_shake:
             self._alarm_signal_low = 1
 
         self.alarmSignalsUpdated.emit()
