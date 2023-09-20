@@ -24,15 +24,56 @@ Item {
             //Dashboard.edit_camera(index)     
         }
 
-        Text {
-            anchors.left: parent.left
-            text: camera.temperature_min
-            color: "green"
+        // Text {
+        //     anchors.left: parent.left
+        //     text: camera.temperature_min
+        //     color: "green"
+        // }
+        // Text {
+        //     anchors.right: parent.right
+        //     text: camera.temperature_max
+        //     color: "red"
+        // }
+
+        RowLayout {
+            spacing: 2
+            // width: 100
+            // height: 100
+            ColumnLayout {
+                Text {
+                    Layout.topMargin: 4
+                    Layout.leftMargin: 4
+                    text: "Camera " + index
+                    font.family: "Time New Roman"
+                }
+            }
+            ColumnLayout {
+                Text {
+                    Layout.topMargin: 4
+                    Layout.leftMargin: 30
+                    text: "[H:" + camera.alarm_signal_high + "] [L:" + camera.alarm_signal_low + "]"
+                    color: "red"
+                }
+            }
+
         }
-        Text {
-            anchors.right: parent.right
-            text: camera.temperature_max
-            color: "red"
+        RowLayout {
+            spacing: 2
+            Text {
+                Layout.topMargin: 115
+                Layout.leftMargin: 4
+                text: "[" + camera.alarm_temperature_low + "] " + camera.temperature_min
+                color: "green"
+            }
+        }
+        RowLayout {
+            spacing: 2
+            Text {
+                Layout.topMargin: 130
+                Layout.leftMargin: 4
+                text: "[" + camera.alarm_temperature_high + "] " + camera.temperature_max
+                color: "red"
+            }
         }
     }
 }

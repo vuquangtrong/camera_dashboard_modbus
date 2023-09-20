@@ -14,7 +14,7 @@ log.setLevel(logging.DEBUG)
 # Define the Modbus registers
 coils = ModbusSequentialDataBlock(1, [False] * 10)
 discrete_inputs = ModbusSequentialDataBlock(1, [False] * 10)
-holding_registers = ModbusSequentialDataBlock(1, [0] * 10)
+holding_registers = ModbusSequentialDataBlock(1, [0] * 100)
 input_registers = ModbusSequentialDataBlock(1, [0] * 10)
 
 # Define the Modbus slave context
