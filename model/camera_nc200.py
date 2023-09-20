@@ -12,7 +12,7 @@ from pymodbus.client.tcp import ModbusTcpClient
 from pymodbus.payload import BinaryPayloadBuilder, BinaryPayloadDecoder
 from pymodbus.constants import Endian
 from PySide6.QtCore import QObject, Property, Signal, Slot
-
+import json
 
 class Camera_NC200(QObject):
     """
@@ -71,7 +71,8 @@ F3wPTUp/+rydh3oBkQIDAQAB
     modbus_server = "127.0.0.1"
     modbus_port = 5001
     modbus_client = None
-    
+    query_status = 0
+
     # METHODS
     def __init__(self,
                  parent: QObject,
@@ -122,6 +123,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
         self._alarm_signal_low = 0
         self._qtime_high = 0   # dejiter
         self._qtime_low = 0    # dejiter
+        self.query_status = 1
 
         # start background thread
         self._thread_query_info = threading.Thread(target=self.query_info, daemon=True)  # auto-kill
@@ -354,17 +356,37 @@ F3wPTUp/+rydh3oBkQIDAQAB
         """
         while True:
             time.sleep(1)
-            if self.login():
-                    if self.modbus_connect():
+            while self.query_status == 1:
+                if self.login():
                         time.sleep(1)
-                        while True:
+                        if self.modbus_connect():
                             time.sleep(1)
-                            # send temperature min, max to UI and modbus
-                            self.set_temperature(self.query_temperature_object())
-                            # send alarm temperature info to UI and modbus
-                            self.set_alarm_temperature_tracking(self.query_temperature_tracking())
-                            # send alarm signal to UI and modbus
-                            self.set_alarm_signal()
+                            while self.query_status == 1:
+                                try:
+                                    # send temperature min, max to UI and modbus
+                                    self.set_temperature(self.query_temperature_object())
+                                    # send alarm temperature info to UI and modbus
+                                    self.set_alarm_temperature_tracking(self.query_temperature_tracking())
+                                    # send alarm signal to UI and modbus
+                                    self.set_alarm_signal()
+                                except:
+                                    print("could not set temperature to modbus")
+                else:
+                    print("login failed")
+                    self.query_status == 0
+
+    def start_query(self):
+        """
+        start querying information
+        """
+        self.query_status = 1
+
+    def stop_query(self):
+        """
+        stop querying information
+        """
+        self.query_status = 0
+
 
     def get_temperature_max(self):
         """
@@ -483,7 +505,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
 
         self.alarmSignalsUpdated.emit()
         self.modbus_update_alarm_signal()
-
+    
     def modbus_connect(self):
         """
         Connect to Server via Modbus TCP
@@ -491,6 +513,12 @@ F3wPTUp/+rydh3oBkQIDAQAB
         self.modbus_client = ModbusTcpClient(self.modbus_server, port=self.modbus_port)
         self.modbus_client.connect()
         return self.modbus_client.is_socket_open()
+    
+    def get_query_status(self):
+        """
+        get query status
+        """
+        return self.query_status
 
     def modbus_disconnect(self):
         """
@@ -573,8 +601,31 @@ F3wPTUp/+rydh3oBkQIDAQAB
             # # Read values in registers
             # signal_high = self.modbus_client.read_holding_registers(address=self.modbus_register_alarm_signal_high, count=1)
             # signal_low = self.modbus_client.read_holding_registers(address=self.modbus_register_alarm_signal_low, count=1)
-
-    # PROPERTIES
+    
+    
+    
+    def save_camera_to_database(self, index):
+        try:
+            with open("database\cameras.json", "r") as file:
+                json_cameras = json.load(file)
+                if index != -1:
+                    for camera in json_cameras["cameras"]:
+                        print(camera["index"])
+                        print(index)
+                        if camera["index"] == index:
+                            camera["ip"] = self.ip
+                            camera["port"] = self.port
+                            camera["modbus_port"] = self.modbus_port
+                            camera["modbus_ip"] = self.modbus_server
+                else:
+                    print(len(json_cameras["cameras"]))             
+                    camera = {'ip': self.ip, 'port': self.port, 'modbus_port': self.modbus_port, 'modbus_ip': self.modbus_server, 'index': len(json_cameras["cameras"])}
+                    json_cameras["cameras"].append(camera)
+            with open('database\cameras.json', "w") as file:
+                json.dump(json_cameras, file, indent=2)
+        except:
+            print("Could not save camera to database")
+    ### PROPERTIES
     temperature_max = Property(float, fget=get_temperature_max, notify=temperatureUpdated)
     temperature_min = Property(float, fget=get_temperature_min, notify=temperatureUpdated)
     # temperature_avg = Property(float, fget=get_temperature_avg, notify=temperatureUpdated)

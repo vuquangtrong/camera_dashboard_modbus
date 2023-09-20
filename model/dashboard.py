@@ -3,6 +3,7 @@ from PySide6.QtQml import qmlRegisterType
 
 from model.camera_nc200 import Camera_NC200
 
+import json
 
 class Dashboard(QObject):
     """
@@ -24,10 +25,18 @@ class Dashboard(QObject):
         # attributes
 
       # self._cameras = [Camera_NC200(self, ip="127.0.0.1", port=5000)] need to comment because it will override CameraNC200 class
-        self._cameras = [Camera_NC200(self)]
+        self._cameras =[]
         self._edittingCamera = Camera_NC200(self)
         self._isEditting = 0
         self._edittingIndex = None
+        try:
+            with open("database\cameras.json", "r") as file:
+                json_cameras = json.load(file)
+                for camera in json_cameras["cameras"]:
+                    cam = Camera_NC200(self,ip=camera['ip'], port = camera['port'], modbus_server = camera['modbus_ip'], modbus_port = camera['modbus_port'])
+                    self._cameras.append(cam)
+        except:
+            print("Error loading JSON file")
 
     def get_cameras(self):
         """
@@ -61,8 +70,12 @@ class Dashboard(QObject):
         if is_editting == 1:
             if index == -1:
                 self._edittingCamera = Camera_NC200(self)
+                self._edittingCamera.stop_query()
             else:
-               self._edittingCamera = self.cameras[index]
+                self._edittingCamera = self.cameras[index]
+                self._edittingCamera.stop_query()
+        else:
+            self._edittingCamera.start_query()
         self.camerasUpdated.emit()
         
 
@@ -71,6 +84,7 @@ class Dashboard(QObject):
         if index == -1:
             self._cameras.append(self._edittingCamera)
         self.camerasUpdated.emit()
+        self._edittingCamera.save_camera_to_database(index)
         #else:
             #self._camera.insert(self.edittingCamera, index)   
     # PROPERTIES
