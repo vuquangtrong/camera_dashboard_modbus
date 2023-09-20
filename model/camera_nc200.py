@@ -101,10 +101,10 @@ F3wPTUp/+rydh3oBkQIDAQAB
         self.modbus_register_alarm_enable = 5
         self.modbus_register_alarm_high = 6
         self.modbus_register_alarm_low = 7
-        self.modbus_register_alarm_signal_high = 5
-        self.modbus_register_alarm_signal_low = 6
-        self.modbus_register_alarm_temp_high = 7
-        self.modbus_register_alarm_temp_low = 10
+        self.modbus_register_alarm_signal_high = 8
+        self.modbus_register_alarm_signal_low = 9
+        self.modbus_register_alarm_temp_high = 10
+        self.modbus_register_alarm_temp_low = 12
 
         # init properties
         self._temperature_max = 0
