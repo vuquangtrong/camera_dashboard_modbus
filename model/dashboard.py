@@ -94,7 +94,9 @@ class Dashboard(QObject):
     @Slot(int)
     def delete_camera(self, index):
         if index != -1:
+            self._edittingCamera.stop_thread_query_info()
             self.cameras.pop(index)
+            self._edittingCamera.delete_camera_in_database(index)
         self.camerasUpdated.emit()
 
     

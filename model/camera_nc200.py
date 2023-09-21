@@ -13,6 +13,7 @@ from pymodbus.payload import BinaryPayloadBuilder, BinaryPayloadDecoder
 from pymodbus.constants import Endian
 from PySide6.QtCore import QObject, Property, Signal, Slot
 import json
+import sys
 
 class Camera_NC200(QObject):
     """
@@ -72,6 +73,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
     modbus_port = 5001
     modbus_client = None
     query_status = 0
+    _query_infor_stop = True
 
     # METHODS
     def __init__(self,
@@ -124,6 +126,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
         self._qtime_high = 0   # dejiter
         self._qtime_low = 0    # dejiter
         self.query_status = 1
+        self._query_infor_stop = False
 
         # start background thread
         self._thread_query_info = threading.Thread(target=self.query_info, daemon=True)  # auto-kill
@@ -364,7 +367,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
         """
         Infinite loop to login then query info
         """
-        while True:
+        while self._query_infor_stop == False:
             time.sleep(1)
             while self.query_status == 1:
                 if self.login():
@@ -382,6 +385,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
                 else:
                     print("login failed")
                     self.query_status == 0
+        sys.exit()
 
     def start_query(self):
         """
@@ -622,29 +626,41 @@ F3wPTUp/+rydh3oBkQIDAQAB
         else:
             print("Error updating alram signal, modbus client is None or socket is not open")
     
-    
-    
     def save_camera_to_database(self, index):
         try:
             with open("database\cameras.json", "r") as file:
                 json_cameras = json.load(file)
                 if index != -1:
                     for camera in json_cameras["cameras"]:
-                        print(camera["index"])
-                        print(index)
                         if camera["index"] == index:
                             camera["ip"] = self.ip
                             camera["port"] = self.port
                             camera["modbus_port"] = self.modbus_port
                             camera["modbus_ip"] = self.modbus_server
-                else:
-                    print(len(json_cameras["cameras"]))             
+                else:      
                     camera = {'ip': self.ip, 'port': self.port, 'modbus_port': self.modbus_port, 'modbus_ip': self.modbus_server, 'index': len(json_cameras["cameras"])}
                     json_cameras["cameras"].append(camera)
             with open('database\cameras.json', "w") as file:
                 json.dump(json_cameras, file, indent=2)
         except:
             print("Could not save camera to database")
+            
+    def delete_camera_in_database(self, index):
+        try:
+            with open("database\cameras.json", "r") as file:
+                json_cameras = json.load(file)
+                json_cameras["cameras"].pop(index)
+                for camera in json_cameras["cameras"]:
+                    if camera["index"] > index:
+                        camera["index"] -= 1
+            with open("database\cameras.json", "w") as file:
+                json.dump(json_cameras, file, indent=2)
+        except:
+            print("Could not delete camera from database")
+
+    def stop_thread_query_info(self):
+        self._query_infor_stop = True
+        
     ### PROPERTIES
     temperature_max = Property(float, fget=get_temperature_max, notify=temperatureUpdated)
     temperature_min = Property(float, fget=get_temperature_min, notify=temperatureUpdated)
