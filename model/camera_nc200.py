@@ -362,6 +362,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
                         if self.modbus_connect():
                             time.sleep(1)
                             while self.query_status == 1:
+                                time.sleep(1)
                                 try:
                                     # send temperature min, max to UI and modbus
                                     self.set_temperature(self.query_temperature_object())
