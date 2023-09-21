@@ -71,9 +71,11 @@ class Dashboard(QObject):
             if index == -1:
                 self._edittingCamera = Camera_NC200(self)
                 self._edittingCamera.stop_query()
+                self._edittingCamera.stop_heartbeat()
             else:
                 self._edittingCamera = self.cameras[index]
                 self._edittingCamera.stop_query()
+                self._edittingCamera.stop_heartbeat()
         else:
             self._edittingCamera.start_query()
         self.camerasUpdated.emit()

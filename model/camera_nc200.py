@@ -92,7 +92,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
         self.user = user
         self.pwd = pwd
         self.cipher_rsa = PKCS1_v1_5.new(RSA.import_key(self.pub_key))
-        self._thread_heartbeat = threading.Thread(target=self.heartbeat, daemon=True)  # auto-kill
+        self._thread_heartbeat = None # auto-kill
 
         # init Modbus configs
         self.modbus_server = modbus_server
@@ -143,14 +143,17 @@ F3wPTUp/+rydh3oBkQIDAQAB
         post a request with message in json format
         return response in json format also
         """
-        request = requests.post(
-            "http://" + self.ip + ":" + str(self.port) + "/getmsginfo",
-            headers=self.headers,
-            json=msg,
-            timeout=5  # sec
-        )
-
-        response = request.json()
+        try:
+            request = requests.post(
+                "http://" + self.ip + ":" + str(self.port) + "/getmsginfo",
+                headers=self.headers,
+                json=msg,
+                timeout=5  # sec
+            )
+            response = request.json()
+        except:
+            print("Error Post request!")
+            response = None
         # print(response)
 
         return response
@@ -253,6 +256,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
         """
         start a thread to send heartbeat
         """
+        self._thread_heartbeat = threading.Thread(target=self.heartbeat, daemon=True) 
         self._thread_heartbeat.start()
 
     def stop_heartbeat(self):
@@ -278,14 +282,15 @@ F3wPTUp/+rydh3oBkQIDAQAB
             "sequence": 1,
             "token": ""
         }
-
         response = self.post(msg)
-        if response['cmdtype'] == self.CMD_LOGIN:
-            if response['retcode'] == self.ERR_NONE:  # succeeded
-                self.token = response['message']['token']
-                self.start_heartbeat()
-                return True
-
+        if response == None:
+            return False
+        else:        
+            if response['cmdtype'] == self.CMD_LOGIN:
+                if response['retcode'] == self.ERR_NONE:  # succeeded
+                    self.token = response['message']['token']
+                    self.start_heartbeat()
+                    return True
         return False
 
     def query_temperature_at(self, x, y):
@@ -322,12 +327,14 @@ F3wPTUp/+rydh3oBkQIDAQAB
             "token": self.token,
             "message":{}
         }
-
         response = self.post(msg)
-        if ('cmdtype') in response and response['cmdtype'] == self.CMD_TEMP_AT_OBJ:
-            if response['retcode'] == self.ERR_NONE:
-                message = response['message']
-                return message['global_max_temp'], message['global_min_temp'], message['global_avg_temp']
+        if response == None:
+            return None
+        else:
+            if ('cmdtype') in response and response['cmdtype'] == self.CMD_TEMP_AT_OBJ:
+                if response['retcode'] == self.ERR_NONE:
+                    message = response['message']
+                    return message['global_max_temp'], message['global_min_temp'], message['global_avg_temp']
 
     def query_temperature_tracking(self):
         """
@@ -345,10 +352,13 @@ F3wPTUp/+rydh3oBkQIDAQAB
             "token": self.token
         }
         response = self.post(msg)
-        if ('cmdtype') in response and response['cmdtype'] == self.CMD_TEMP_TRACKING:
-            if response['retcode'] == self.ERR_NONE:
-                message = response['message']
-                return message['trace_flag'], message['alarm_shake'], message['record_delay'], message['high_flag'], message['low_flag'], message['high_temp'], message['low_temp']
+        if response == None:
+            return None
+        else:
+            if ('cmdtype') in response and response['cmdtype'] == self.CMD_TEMP_TRACKING:
+                if response['retcode'] == self.ERR_NONE:
+                    message = response['message']
+                    return message['trace_flag'], message['alarm_shake'], message['record_delay'], message['high_flag'], message['low_flag'], message['high_temp'], message['low_temp']
 
     def query_info(self):
         """
@@ -363,15 +373,12 @@ F3wPTUp/+rydh3oBkQIDAQAB
                             time.sleep(1)
                             while self.query_status == 1:
                                 time.sleep(1)
-                                try:
-                                    # send temperature min, max to UI and modbus
-                                    self.set_temperature(self.query_temperature_object())
-                                    # send alarm temperature info to UI and modbus
-                                    self.set_alarm_temperature_tracking(self.query_temperature_tracking())
-                                    # send alarm signal to UI and modbus
-                                    self.set_alarm_signal()
-                                except:
-                                    print("could not set temperature to modbus")
+                                # send temperature min, max to UI and modbus
+                                self.set_temperature(self.query_temperature_object())
+                                # send alarm temperature info to UI and modbus
+                                self.set_alarm_temperature_tracking(self.query_temperature_tracking())
+                                # send alarm signal to UI and modbus
+                                self.set_alarm_signal()
                 else:
                     print("login failed")
                     self.query_status == 0
@@ -411,15 +418,18 @@ F3wPTUp/+rydh3oBkQIDAQAB
         """
         set_temperature
         """
-        val_max, val_min, val_avg = val
-        # if val_max != self._temperature_max or val_min != self._temperature_min or val_avg != self._temperature_avg:
-        if val_max != self._temperature_max or val_min != self._temperature_min:
-            self._temperature_max = val_max
-            self._temperature_min = val_min
-            # self._temperature_avg = val_avg
-            self.temperatureUpdated.emit()
-            # forward to modbus
-            self.modbus_update_temperature()
+        if val == None:
+            print("Could not set temerature value to modbus, temperature value is None")
+        else:
+            val_max, val_min, val_avg = val
+            # if val_max != self._temperature_max or val_min != self._temperature_min or val_avg != self._temperature_avg:
+            if val_max != self._temperature_max or val_min != self._temperature_min:
+                self._temperature_max = val_max
+                self._temperature_min = val_min
+                # self._temperature_avg = val_avg
+                self.temperatureUpdated.emit()
+                # forward to modbus
+                self.modbus_update_temperature()
 
     def get_alarm_enable(self):
         """
@@ -455,18 +465,21 @@ F3wPTUp/+rydh3oBkQIDAQAB
         """
         Set temperature alarm information
         """
-        trace_enable, alarm_shake, record_delay, high_flag, low_flag, high_temp, low_temp = data
-        if trace_enable != self._alarm_enable or alarm_shake != self._alarm_shake or high_flag != self._alarm_flag_high or low_flag != self._alarm_flag_low or high_temp != self._alarm_temperature_high or low_temp != self._alarm_temperature_low:
-            self._alarm_enable = trace_enable
-            self._alarm_shake = alarm_shake
-            self._record_delay = record_delay
-            self._alarm_flag_high = high_flag
-            self._alarm_flag_low = low_flag
-            self._alarm_temperature_high = high_temp
-            self._alarm_temperature_low = low_temp
-            self.alarmTrackingUpdated.emit()
-            #forward to modbus
-            self.modbus_update_alarm_tracking()
+        if data == None:
+            print("Could not set temperature alarm tracking, data is None")
+        else:
+            trace_enable, alarm_shake, record_delay, high_flag, low_flag, high_temp, low_temp = data
+            if trace_enable != self._alarm_enable or alarm_shake != self._alarm_shake or high_flag != self._alarm_flag_high or low_flag != self._alarm_flag_low or high_temp != self._alarm_temperature_high or low_temp != self._alarm_temperature_low:
+                self._alarm_enable = trace_enable
+                self._alarm_shake = alarm_shake
+                self._record_delay = record_delay
+                self._alarm_flag_high = high_flag
+                self._alarm_flag_low = low_flag
+                self._alarm_temperature_high = high_temp
+                self._alarm_temperature_low = low_temp
+                self.alarmTrackingUpdated.emit()
+                #forward to modbus
+                self.modbus_update_alarm_tracking()
 
     def get_alarm_signal_high(self):
         """
@@ -555,6 +568,8 @@ F3wPTUp/+rydh3oBkQIDAQAB
             # decoder = BinaryPayloadDecoder.fromRegisters(value.registers, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
             # value = decoder.decode_32bit_float()
             # print(value)
+        else:
+            print("Error setting temperature to modbus, modbus client is None or socket is not open")
 
     def modbus_update_alarm_tracking(self):
         """
@@ -592,6 +607,8 @@ F3wPTUp/+rydh3oBkQIDAQAB
             # decoder = BinaryPayloadDecoder.fromRegisters(value.registers, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
             # value = decoder.decode_32bit_float()
             # print(value)
+        else:
+            print("Error setting alarm tracking to modbus, modbus client is None or socket is not open")
 
     def modbus_update_alarm_signal(self):
         if self.modbus_client is not None and self.modbus_client.is_socket_open:
@@ -602,6 +619,8 @@ F3wPTUp/+rydh3oBkQIDAQAB
             # # Read values in registers
             # signal_high = self.modbus_client.read_holding_registers(address=self.modbus_register_alarm_signal_high, count=1)
             # signal_low = self.modbus_client.read_holding_registers(address=self.modbus_register_alarm_signal_low, count=1)
+        else:
+            print("Error updating alram signal, modbus client is None or socket is not open")
     
     
     
