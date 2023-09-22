@@ -71,9 +71,11 @@ class Dashboard(QObject):
             if index == -1:
                 self._edittingCamera = Camera_NC200(self)
                 self._edittingCamera.stop_query()
+                self._edittingCamera.stop_heartbeat()
             else:
                 self._edittingCamera = self.cameras[index]
                 self._edittingCamera.stop_query()
+                self._edittingCamera.stop_heartbeat()
         else:
             self._edittingCamera.start_query()
         self.camerasUpdated.emit()
@@ -92,7 +94,9 @@ class Dashboard(QObject):
     @Slot(int)
     def delete_camera(self, index):
         if index != -1:
+            self._edittingCamera.stop_thread_query_info()
             self.cameras.pop(index)
+            self._edittingCamera.delete_camera_in_database(index)
         self.camerasUpdated.emit()
 
     
