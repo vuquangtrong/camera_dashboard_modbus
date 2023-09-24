@@ -82,23 +82,34 @@ F3wPTUp/+rydh3oBkQIDAQAB
         self._thread_query = threading.Thread(target=self.query_info, daemon=True)  # auto-kill
         self._thread_query.start()
 
+    def recalculate_modbus_regs_addr(self):
+        self._modbus_regs_temperature_low = self._modbus_regs_start
+        self._modbus_regs_temperature_high = self._modbus_regs_start + 2
+        self._modbus_regs_temperature_global_min = self._modbus_regs_start + 4
+        self._modbus_regs_temperature_global_max = self._modbus_regs_start + 6
+        self._modbus_regs_temperature_global_avg = self._modbus_regs_start + 8
+        self._modbus_regs_alarming = self._modbus_regs_start + 10
+
     def modbus_connect(self):
         self._modbus_client = ModbusTcpClient(self._modbus_ip, port=self._modbus_port)
         self._modbus_client.connect()
 
     def modbus_send(self, addr, value, type):
-        if self._modbus_client is not None:
-            if type == "float":
-                builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.LITTLE)
-                builder.add_32bit_float(value)
-                payload = builder.build()
-                self._modbus_client.write_register(addr, value=int.from_bytes(payload[0]))
-                self._modbus_client.write_register(addr+1, value=int.from_bytes(payload[1]))
-            elif type == "bool":
-                if value:
-                    self._modbus_client.write_register(addr, value=1)
-                else:
-                    self._modbus_client.write_register(addr, value=0)
+        try:
+            if self._modbus_client is not None:
+                if type == "float":
+                    builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.LITTLE)
+                    builder.add_32bit_float(value)
+                    payload = builder.build()
+                    self._modbus_client.write_register(addr, value=int.from_bytes(payload[0]))
+                    self._modbus_client.write_register(addr+1, value=int.from_bytes(payload[1]))
+                elif type == "bool":
+                    if value:
+                        self._modbus_client.write_register(addr, value=1)
+                    else:
+                        self._modbus_client.write_register(addr, value=0)
+        except Exception as e:
+            print(e)
 
     def check_alarm(self):
 
@@ -308,6 +319,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
         self._modbus_ip = modbus_ip
         self._modbus_port = modbus_port
         self._modbus_regs_start = modbus_regs_start
+        self.recalculate_modbus_regs_addr()
         self.statusUpdated.emit()
 
         # force close all old connection
