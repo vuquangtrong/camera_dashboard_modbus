@@ -1,0 +1,16 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource>
+        <file alias="add.png">resource\icons8-add-50.png</file>
+        <file alias="adjust.png">resource\icons8-adjust-24.png</file>
+        <file alias="connected.png">resource\icons8-connected-24.png</file>
+        <file alias="delete.png">resource\icons8-delete-30.png</file>
+        <file alias="disconnected.png">resource\icons8-disconnected-24.png</file>
+        <file alias="warning.png">resource\icons8-warning-50.png</file>
+        <file alias="CameraGridView.qml">resource\CameraGridView.qml</file>
+        <file alias="CameraSettings.qml">resource\CameraSettings.qml</file>
+        <file alias="CameraWidget.qml">resource\CameraWidget.qml</file>
+        <file alias="main.qml">resource\main.qml</file>
+        <file alias="MenuView.qml">resource\MenuView.qml</file>
+    </qresource>
+</RCC>
