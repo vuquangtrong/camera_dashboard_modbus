@@ -31,7 +31,7 @@ class Camera(QObject):
 
     def __init__(self,
                  parent: QObject,
-                 ip="127.0.0.1", port=5000, user="admin", pwd="admin123",
+                 ip="192.168.1.168", port=80, user="admin", pwd="admin123",
                  modbus_ip="127.0.0.1", modbus_port=5001, modbus_regs_start=40001):
         super().__init__(parent)
 
@@ -74,7 +74,11 @@ F3wPTUp/+rydh3oBkQIDAQAB
         self._global_temperature_max = 50.0
         self._global_temperature_min = -50.0
         self._global_temperature_avg = 0.0
+        self._alarm_delay_counter = 0
+        self._alarm_high_delay_counter = 0
+        self._alarm_low_delay_counter = 0
         self._alarming = False
+    
 
         # data process
         self._thread_query_stopped = False
@@ -112,13 +116,20 @@ F3wPTUp/+rydh3oBkQIDAQAB
             print(e)
 
     def check_alarm(self):
-
         self._alarming = False
 
         if self._alarm_enabled:
             if self._alarm_temperature_high_enabled and self._global_temperature_max >= self._alarm_temperature_high_value:
-                self._alarming = True
+                self._alarm_high_delay_counter += 1
+            else:
+                self._alarm_high_delay_counter = 0
+            
             if self._alarm_temperature_low_enabled and self._global_temperature_min <= self._alarm_temperature_low_value:
+                self._alarm_low_delay_counter += 1
+            else:
+                self._alarm_low_delay_counter = 0
+ 
+            if self._alarm_high_delay_counter >= self._alarm_delay_counter or self._alarm_low_delay_counter >=self._alarm_delay_counter:
                 self._alarming = True
 
         # forward to modbus
@@ -221,6 +232,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
                     self._alarm_enabled = (message['trace_flag'] == 1)
                     self._alarm_temperature_high_enabled = (message['high_flag'] == 1)
                     self._alarm_temperature_low_enabled = (message['low_flag'] == 1)
+                    self._alarm_delay_counter = (message['alarm_shake'] + message['record_delay'])
                     self._alarm_temperature_high_value = message['high_temp']
                     self._alarm_temperature_low_value = message['low_temp']
 

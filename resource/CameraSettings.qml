@@ -4,9 +4,10 @@ import QtQuick.Controls
 
 Dialog {
     property var camera: Dashboard.new_camera
-    property int font_size: 16
+    property int font_size: 14
     property int position: -2
-    property int row_height: 40
+    property int row_height: 30
+    spacing: 20
 
     closePolicy: Popup.NoAutoClose
     standardButtons: Dialog.Ok | Dialog.Cancel
