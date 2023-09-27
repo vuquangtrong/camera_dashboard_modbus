@@ -3,6 +3,7 @@ from PySide6.QtQml import qmlRegisterType
 
 from model.camera import Camera
 import json
+import time
 
 
 class Dashboard(QObject):
@@ -73,7 +74,8 @@ class Dashboard(QObject):
 
     @Slot(int)
     def remove_camera(self, index):
-        self._cameras[index].pause_query()
+        self._cameras[index].stop_query()
+        time.sleep(2)  # wait for thread exit
         del self._cameras[index]
         self.save_cameras()
         self.camerasUpdated.emit()

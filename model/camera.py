@@ -78,7 +78,6 @@ F3wPTUp/+rydh3oBkQIDAQAB
         self._alarm_high_delay_counter = 0
         self._alarm_low_delay_counter = 0
         self._alarming = False
-    
 
         # data process
         self._thread_query_stopped = False
@@ -123,13 +122,13 @@ F3wPTUp/+rydh3oBkQIDAQAB
                 self._alarm_high_delay_counter += 1
             else:
                 self._alarm_high_delay_counter = 0
-            
+
             if self._alarm_temperature_low_enabled and self._global_temperature_min <= self._alarm_temperature_low_value:
                 self._alarm_low_delay_counter += 1
             else:
                 self._alarm_low_delay_counter = 0
- 
-            if self._alarm_high_delay_counter >= self._alarm_delay_counter or self._alarm_low_delay_counter >=self._alarm_delay_counter:
+
+            if self._alarm_high_delay_counter >= self._alarm_delay_counter or self._alarm_low_delay_counter >= self._alarm_delay_counter:
                 self._alarming = True
 
         # forward to modbus
@@ -164,11 +163,11 @@ F3wPTUp/+rydh3oBkQIDAQAB
             retcode = response["retcode"]
 
             if (retcode == Camera.ERR_INVALID_USERNAME or
-                    retcode == Camera.ERR_INVALID_PASSWORD or
-                    retcode == Camera.ERR_WRONG_USER_OR_PWD or
-                    retcode == Camera.ERR_NOT_AUTHENTICATED or
-                    retcode == Camera.ERR_NO_PERMISSION
-                ):
+                        retcode == Camera.ERR_INVALID_PASSWORD or
+                        retcode == Camera.ERR_WRONG_USER_OR_PWD or
+                        retcode == Camera.ERR_NOT_AUTHENTICATED or
+                        retcode == Camera.ERR_NO_PERMISSION
+                    ):
                 self._logged_in = False
                 return None
 
@@ -294,6 +293,11 @@ F3wPTUp/+rydh3oBkQIDAQAB
     @Slot()
     def pause_query(self):
         self._thread_query_paused = True
+
+    @Slot()
+    def stop_query(self):
+        self._thread_query_paused = True
+        self._thread_query_stopped = True
 
     # camera
 
