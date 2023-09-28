@@ -7,6 +7,12 @@ Dialog {
     property int font_size: 14
     property int position: -2
     property int row_height: 30
+    property int top_margin: 20
+    property int left_margin_level_A: 20
+    property int left_margin_level_B: 40
+    property int left_margin_checkbox: 30
+    height: 600
+    width: 500
     spacing: 20
 
     closePolicy: Popup.NoAutoClose
@@ -14,7 +20,9 @@ Dialog {
     title: (position >= 0 ? "CAM " + (position + 1) : "New Camera") + " Settings"
 
     onAccepted: {
-        camera.save_settings(ip.text, parseInt(port.text), user.text, pwd.text, modbus_ip.text, parseInt(modbus_port.text), parseInt(modbus_regs_start.text));
+        camera.save_settings(ip.text, parseInt(port.text), user.text, pwd.text, modbus_ip.text,
+                            parseInt(modbus_port.text), parseInt(ti_modbus_address_alarming.text), parseInt(ti_modbus_address_temperature_low.text),
+                            parseInt(ti_modbus_address_temperature_high.text));
         if (position == -1) {
             Dashboard.add_camera();
         } else {
@@ -61,7 +69,7 @@ Dialog {
 
         Label {
             anchors.centerIn: parent
-            color: "dodgerblue"
+            color: "yellow"
             font.pointSize: font_size
             text: "Do you want to delete?"
         }
@@ -79,28 +87,39 @@ Dialog {
                 diaglog_remove.visible = true;
             }
         }
-    }
+    } 
     ColumnLayout {
         anchors.centerIn: parent
 
         RowLayout {
+            Layout.topMargin: top_margin
+            Label {
+                Layout.preferredWidth: 100
+                font.pointSize: 18
+                text: "General"
+                Layout.leftMargin: left_margin_level_A
+                color: "Yellow"
+            }
+        }
+        RowLayout {
             Layout.preferredHeight: row_height
 
             Label {
-                Layout.preferredWidth: 150
+                Layout.preferredWidth: 130
                 font.pointSize: font_size
                 text: "Camera IP: "
+                Layout.leftMargin: left_margin_level_B
             }
             TextInput {
                 id: ip
 
                 Layout.preferredWidth: 200
-                color: "dodgerblue"
+                color: "darkturquoise"
                 font.pointSize: font_size
                 text: "" + camera.ip
             }
             Label {
-                Layout.preferredWidth: 150
+                Layout.preferredWidth: 130
                 font.pointSize: font_size
                 text: "Port: "
             }
@@ -108,7 +127,7 @@ Dialog {
                 id: port
 
                 Layout.preferredWidth: 200
-                color: "dodgerblue"
+                color: "darkturquoise"
                 font.pointSize: font_size
                 text: "" + camera.port
 
@@ -122,20 +141,21 @@ Dialog {
             Layout.preferredHeight: row_height
 
             Label {
-                Layout.preferredWidth: 150
+                Layout.preferredWidth: 130
                 font.pointSize: font_size
                 text: "Username: "
+                Layout.leftMargin: left_margin_level_B
             }
             TextInput {
                 id: user
 
                 Layout.preferredWidth: 200
-                color: "dodgerblue"
+                color: "darkturquoise"
                 font.pointSize: font_size
                 text: "" + camera.user
             }
             Label {
-                Layout.preferredWidth: 150
+                Layout.preferredWidth: 130
                 font.pointSize: font_size
                 text: "Password: "
             }
@@ -143,7 +163,7 @@ Dialog {
                 id: pwd
 
                 Layout.preferredWidth: 200
-                color: "dodgerblue"
+                color: "darkturquoise"
                 font.pointSize: font_size
                 text: "" + camera.pwd
             }
@@ -152,20 +172,21 @@ Dialog {
             Layout.preferredHeight: row_height
 
             Label {
-                Layout.preferredWidth: 150
+                Layout.preferredWidth: 130
                 font.pointSize: font_size
                 text: "Modbus IP: "
+                Layout.leftMargin: left_margin_level_B
             }
             TextInput {
                 id: modbus_ip
 
                 Layout.preferredWidth: 200
-                color: "dodgerblue"
+                color: "darkturquoise"
                 font.pointSize: font_size
                 text: "" + camera.modbus_ip
             }
             Label {
-                Layout.preferredWidth: 150
+                Layout.preferredWidth: 130
                 font.pointSize: font_size
                 text: "Port: "
             }
@@ -173,7 +194,7 @@ Dialog {
                 id: modbus_port
 
                 Layout.preferredWidth: 200
-                color: "dodgerblue"
+                color: "darkturquoise"
                 font.pointSize: font_size
                 text: "" + camera.modbus_port
 
@@ -185,24 +206,15 @@ Dialog {
         }
         RowLayout {
             Layout.preferredHeight: row_height
-
+            
             Label {
-                Layout.preferredWidth: 150
-                font.pointSize: font_size
-                text: "Start Register: "
-            }
-            TextInput {
-                id: modbus_regs_start
-
-                Layout.preferredWidth: 200
-                color: "dodgerblue"
-                font.pointSize: font_size
-                text: "" + camera.modbus_regs_start
-
-                validator: IntValidator {
-                    bottom: 40000
-                    top: 60000
-                }
+                Layout.preferredWidth: 100
+                font.pointSize: 18
+                text: "Alarm"
+                Layout.leftMargin: left_margin_level_A
+                Layout.topMargin: 10
+                Layout.bottomMargin: -10
+                color: "Yellow"
             }
         }
         RowLayout {
@@ -213,27 +225,7 @@ Dialog {
                 enabled: false
                 font.pointSize: font_size
                 text: "Enable Alarm"
-            }
-        }
-        RowLayout {
-            Layout.preferredHeight: row_height
-
-            CheckBox {
-                checked: camera.alarm_temperature_high_enabled
-                enabled: false
-                font.pointSize: font_size
-                text: "Enable High Temperature"
-            }
-            TextInput {
-                Layout.preferredWidth: 50
-                color: "dodgerblue"
-                enabled: false
-                font.pointSize: font_size
-                text: "" + camera.alarm_temperature_high_value
-            }
-            Label {
-                font.pointSize: font_size
-                text: "°C"
+                Layout.leftMargin: left_margin_checkbox
             }
         }
         RowLayout {
@@ -243,7 +235,8 @@ Dialog {
                 checked: camera.alarm_temperature_low_enabled
                 enabled: false
                 font.pointSize: font_size
-                text: "Enable High Temperature"
+                text: "Enable Low Temperature"
+                Layout.leftMargin: left_margin_checkbox
             }
             TextInput {
                 Layout.preferredWidth: 50
@@ -255,6 +248,92 @@ Dialog {
             Label {
                 font.pointSize: font_size
                 text: "°C"
+            }
+        }
+        RowLayout {
+            Layout.preferredHeight: row_height
+
+            CheckBox {
+                checked: camera.alarm_temperature_high_enabled
+                enabled: false
+                font.pointSize: font_size
+                text: "Enable High Temperature"
+                Layout.leftMargin: left_margin_checkbox
+            }
+            TextInput {
+                Layout.preferredWidth: 50
+                color: "orange"
+                enabled: false
+                font.pointSize: font_size
+                text: "" + camera.alarm_temperature_high_value
+            }
+            Label {
+                font.pointSize: font_size
+                text: "°C"
+            }
+        }
+        RowLayout {
+            Layout.topMargin: top_margin
+            Label {
+                Layout.preferredWidth: 130
+                font.pointSize: 18
+                text: "Signal list address"
+                Layout.leftMargin: left_margin_level_A
+                color: "Yellow"
+            }
+        }
+        RowLayout {
+            Layout.preferredHeight: row_height
+
+            Label {
+                Layout.preferredWidth: 200
+                font.pointSize: font_size
+                text: "Min Temperature: "
+                Layout.leftMargin: left_margin_level_B
+            }
+            TextInput {
+                id: ti_modbus_address_temperature_low
+
+                Layout.preferredWidth: 200
+                color: "darkturquoise"
+                font.pointSize: font_size
+                text: "" + camera.modbus_address_temperature_low
+            }
+        }
+        RowLayout {
+            Layout.preferredHeight: row_height
+
+            Label {
+                Layout.preferredWidth: 200
+                font.pointSize: font_size
+                text: "Max Temperature: "
+                Layout.leftMargin: left_margin_level_B
+            }
+            TextInput {
+                id: ti_modbus_address_temperature_high
+
+                Layout.preferredWidth: 200
+                color: "darkturquoise"
+                font.pointSize: font_size
+                text: "" + camera.modbus_address_temperature_high
+            }
+        }
+        RowLayout {
+            Layout.preferredHeight: row_height
+
+            Label {
+                Layout.preferredWidth: 200
+                font.pointSize: font_size
+                text: "Alarm status: "
+                Layout.leftMargin: left_margin_level_B
+            }
+            TextInput {
+                id: ti_modbus_address_alarming
+
+                Layout.preferredWidth: 200
+                color: "darkturquoise"
+                font.pointSize: font_size
+                text: "" + camera.modbus_address_alarming
             }
         }
     }

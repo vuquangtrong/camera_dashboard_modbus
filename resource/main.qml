@@ -33,7 +33,7 @@ ApplicationWindow {
         id: camera_settings
 
         anchors.centerIn: parent
-        height: parent.height / 2
+        height: (parent.height * 3) / 4
         width: parent.width / 2
     }
 }

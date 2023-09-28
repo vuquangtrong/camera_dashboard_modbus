@@ -20,6 +20,8 @@ def getmsginfo():
     if response['cmdtype'] == 20:  # get cold hot spot tracking
         response['message'] = {
             'trace_flag': 1,
+            'alarm_shake': 0,
+            'record_delay': 10,
             'high_flag': 1,
             'low_flag': 1,
             'high_temp': 34.5,

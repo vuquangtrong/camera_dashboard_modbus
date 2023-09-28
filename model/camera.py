@@ -31,8 +31,9 @@ class Camera(QObject):
 
     def __init__(self,
                  parent: QObject,
-                 ip="192.168.1.168", port=80, user="admin", pwd="admin123",
-                 modbus_ip="127.0.0.1", modbus_port=5001, modbus_regs_start=40001):
+                 ip="127.0.0.1", port=5000, user="admin", pwd="admin123",
+                 modbus_ip="127.0.0.1", modbus_port=5001, modbus_regs_alarming=40005,
+                 modbus_regs_temperature_global_min=40001, modbus_regs_temperature_global_max=40003):
         super().__init__(parent)
 
         # camera
@@ -54,14 +55,14 @@ F3wPTUp/+rydh3oBkQIDAQAB
         # modbus
         self._modbus_ip = modbus_ip
         self._modbus_port = modbus_port
-        self._modbus_regs_start = modbus_regs_start
+        # self._modbus_regs_start = modbus_regs_start
 
-        self._modbus_regs_temperature_low = modbus_regs_start
-        self._modbus_regs_temperature_high = modbus_regs_start + 2
-        self._modbus_regs_temperature_global_min = modbus_regs_start + 4
-        self._modbus_regs_temperature_global_max = modbus_regs_start + 6
-        self._modbus_regs_temperature_global_avg = modbus_regs_start + 8
-        self._modbus_regs_alarming = modbus_regs_start + 10
+        # self._modbus_regs_temperature_low = modbus_regs_start
+        # self._modbus_regs_temperature_high = modbus_regs_start + 2
+        self._modbus_regs_temperature_global_min = modbus_regs_temperature_global_min
+        self._modbus_regs_temperature_global_max = modbus_regs_temperature_global_max
+        # self._modbus_regs_temperature_global_avg = modbus_regs_start + 8
+        self._modbus_regs_alarming = modbus_regs_alarming
 
         self._modbus_client = None
 
@@ -85,13 +86,13 @@ F3wPTUp/+rydh3oBkQIDAQAB
         self._thread_query = threading.Thread(target=self.query_info, daemon=True)  # auto-kill
         self._thread_query.start()
 
-    def recalculate_modbus_regs_addr(self):
-        self._modbus_regs_temperature_low = self._modbus_regs_start
-        self._modbus_regs_temperature_high = self._modbus_regs_start + 2
-        self._modbus_regs_temperature_global_min = self._modbus_regs_start + 4
-        self._modbus_regs_temperature_global_max = self._modbus_regs_start + 6
-        self._modbus_regs_temperature_global_avg = self._modbus_regs_start + 8
-        self._modbus_regs_alarming = self._modbus_regs_start + 10
+    # def recalculate_modbus_regs_addr(self):
+    #     self._modbus_regs_temperature_low = self._modbus_regs_start
+    #     self._modbus_regs_temperature_high = self._modbus_regs_start + 2
+    #     self._modbus_regs_temperature_global_min = self._modbus_regs_start + 4
+    #     self._modbus_regs_temperature_global_max = self._modbus_regs_start + 6
+    #     self._modbus_regs_temperature_global_avg = self._modbus_regs_start + 8
+    #     self._modbus_regs_alarming = self._modbus_regs_start + 10
 
     def modbus_connect(self):
         self._modbus_client = ModbusTcpClient(self._modbus_ip, port=self._modbus_port)
@@ -122,21 +123,21 @@ F3wPTUp/+rydh3oBkQIDAQAB
                 self._alarm_high_delay_counter += 1
             else:
                 self._alarm_high_delay_counter = 0
-
+            
             if self._alarm_temperature_low_enabled and self._global_temperature_min <= self._alarm_temperature_low_value:
                 self._alarm_low_delay_counter += 1
             else:
                 self._alarm_low_delay_counter = 0
-
+ 
             if self._alarm_high_delay_counter >= self._alarm_delay_counter or self._alarm_low_delay_counter >= self._alarm_delay_counter:
                 self._alarming = True
 
         # forward to modbus
-        self.modbus_send(self._modbus_regs_temperature_low, self._alarm_temperature_low_value, "float")
-        self.modbus_send(self._modbus_regs_temperature_high, self._alarm_temperature_high_value, "float")
+        # self.modbus_send(self._modbus_regs_temperature_low, self._alarm_temperature_low_value, "float")
+        # self.modbus_send(self._modbus_regs_temperature_high, self._alarm_temperature_high_value, "float")
         self.modbus_send(self._modbus_regs_temperature_global_min, self._global_temperature_min, "float")
         self.modbus_send(self._modbus_regs_temperature_global_max, self._global_temperature_max, "float")
-        self.modbus_send(self._modbus_regs_temperature_global_avg, self._global_temperature_avg, "float")
+        # self.modbus_send(self._modbus_regs_temperature_global_avg, self._global_temperature_avg, "float")
         self.modbus_send(self._modbus_regs_alarming, self._alarming, "bool")
 
     def encode(self, data):
@@ -163,10 +164,10 @@ F3wPTUp/+rydh3oBkQIDAQAB
             retcode = response["retcode"]
 
             if (retcode == Camera.ERR_INVALID_USERNAME or
-                        retcode == Camera.ERR_INVALID_PASSWORD or
-                        retcode == Camera.ERR_WRONG_USER_OR_PWD or
-                        retcode == Camera.ERR_NOT_AUTHENTICATED or
-                        retcode == Camera.ERR_NO_PERMISSION
+                    retcode == Camera.ERR_INVALID_PASSWORD or
+                    retcode == Camera.ERR_WRONG_USER_OR_PWD or
+                    retcode == Camera.ERR_NOT_AUTHENTICATED or
+                    retcode == Camera.ERR_NO_PERMISSION
                     ):
                 self._logged_in = False
                 return None
@@ -320,22 +321,30 @@ F3wPTUp/+rydh3oBkQIDAQAB
 
     def get_modbus_port(self):
         return self._modbus_port
+    
+    def get_modbus_address_temperature_high(self):
+        return self._modbus_regs_temperature_global_max
 
-    def get_modbus_regs_start(self):
-        return self._modbus_regs_start
+    def get_modbus_address_temperature_low(self):
+        return self._modbus_regs_temperature_global_min
+    
+    def get_modbus_address_alarming(self):
+        return self._modbus_regs_alarming
 
-    @Slot(str, int, str, str,  str, int, int)
+    @Slot(str, int, str, str, str, int, int, int, int)
     def save_settings(self,
                       ip, port, user, pwd,
-                      modbus_ip, modbus_port, modbus_regs_start):
+                      modbus_ip, modbus_port, modbus_regs_alarming, modbus_regs_temp_low, modbus_regs_temp_high):
         self._ip = ip
         self._port = port
         self._user = user
         self._pwd = pwd
         self._modbus_ip = modbus_ip
         self._modbus_port = modbus_port
-        self._modbus_regs_start = modbus_regs_start
-        self.recalculate_modbus_regs_addr()
+        self._modbus_regs_temperature_global_max = modbus_regs_temp_high
+        self._modbus_regs_temperature_global_min = modbus_regs_temp_low
+        self._modbus_regs_alarming = modbus_regs_alarming
+        # self.recalculate_modbus_regs_addr()
         self.statusUpdated.emit()
 
         # force close all old connection
@@ -383,7 +392,10 @@ F3wPTUp/+rydh3oBkQIDAQAB
 
     modbus_ip = Property(str, fget=get_modbus_ip, notify=settingUpdated)
     modbus_port = Property(int, fget=get_modbus_port, notify=settingUpdated)
-    modbus_regs_start = Property(int, fget=get_modbus_regs_start, notify=settingUpdated)
+    # modbus_regs_start = Property(int, fget=get_modbus_regs_start, notify=settingUpdated)
+    modbus_address_temperature_high = Property(int, fget=get_modbus_address_temperature_high, notify=settingUpdated)
+    modbus_address_temperature_low = Property(int, fget=get_modbus_address_temperature_low, notify=settingUpdated)
+    modbus_address_alarming = Property(int, fget=get_modbus_address_alarming, notify=settingUpdated)
 
     connected = Property(bool, fget=is_connected, notify=statusUpdated)
 
