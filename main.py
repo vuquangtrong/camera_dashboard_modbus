@@ -29,4 +29,6 @@ if not engine.rootObjects():
     sys.exit(-1)
 
 # start the app thread
-sys.exit(app.exec())
+app.exec()
+dashboard.exit()
+sys.exit(0)

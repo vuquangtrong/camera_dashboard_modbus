@@ -16,6 +16,8 @@ ApplicationWindow {
     title: "Camera Dashboard"
     visibility: Window.Maximized
     visible: true
+    minimumWidth: 1280
+    minimumHeight: 720
 
     ColumnLayout {
         anchors.fill: parent
@@ -33,7 +35,5 @@ ApplicationWindow {
         id: camera_settings
 
         anchors.centerIn: parent
-        height: (parent.height * 3) / 4
-        width: parent.width / 2
     }
 }

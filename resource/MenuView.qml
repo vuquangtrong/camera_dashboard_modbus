@@ -2,29 +2,44 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Material
 
-// Pane {
-Item {
+// Item {
+Pane {
     id: menu_view
 
-    // Material.background: Material.BlueGrey
-    // Material.elevation: 10
+    Material.elevation: 10
 
-    Label {
-        anchors.left: parent.left
-        anchors.margins: 10
+    RowLayout {
         anchors.verticalCenter: parent.verticalCenter
-        text: "Total Cameras: " + Dashboard.cameras.length
-    }
-    Image {
-        anchors.margins: 20
-        anchors.right: parent.right
-        anchors.verticalCenter: parent.verticalCenter
-        source: "add.png"
+        spacing: 10
+        width: parent.width
 
-        MouseArea {
-            anchors.fill: parent
+        Label {
+            text: "Total Cameras:"
+        }
+        Label {
+            color: "darkturquoise"
+            font.bold: true
+            text: "" + Dashboard.cameras.length
+        }
+        Label {
+            text: "Modbus Server IP:"
+        }
+        Label {
+            color: "yellow"
+            font.bold: true
+            text: "" + Dashboard.local_ips
+        }
+        Item {
+            Layout.fillWidth: true
+        }
+        Image {
+            source: "add.png"
 
-            onClicked: add_camera()
+            MouseArea {
+                anchors.fill: parent
+
+                onClicked: add_camera()
+            }
         }
     }
 }

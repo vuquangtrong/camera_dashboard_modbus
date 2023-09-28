@@ -1,9 +1,12 @@
+import json
+import time
+import subprocess
+import re
 from PySide6.QtCore import QObject, Property, Signal, Slot
 from PySide6.QtQml import qmlRegisterType
 
 from model.camera import Camera
-import json
-import time
+from model.modbus_server import Modbus_Server
 
 
 class Dashboard(QObject):
@@ -14,6 +17,9 @@ class Dashboard(QObject):
         super().__init__(parent)
         qmlRegisterType(Camera, "Camera", 1, 0, "Camera")
 
+        self._modbus_server = Modbus_Server()
+        self._modbus_server.start()
+
         self._new_camera = Camera(self)
         self._new_camera._thread_query_stopped = True
 
@@ -22,6 +28,20 @@ class Dashboard(QObject):
         ]
         self.load_cameras()
 
+    def exit(self):
+        self._modbus_server.stop()
+
+    def get_local_ips(self):
+        ipconfig = subprocess.check_output('ipconfig').decode("utf-8").splitlines()
+        pattern = re.compile(r'^ *IPv4 Address[.\s]*:\s*([\d.]+)\s*$')
+        ips = []
+        for line in ipconfig:
+            result = pattern.search(line)
+            if result:
+                ips.append(result.group(1))
+        
+        return ', '.join(ips)
+    
     def load_cameras(self):
         try:
             with open("cameras.json", "r") as f:
@@ -86,3 +106,4 @@ class Dashboard(QObject):
 
     new_camera = Property(Camera, fget=get_new_camera, notify=camerasUpdated)
     cameras = Property("QVariantList", fget=get_cameras, notify=camerasUpdated)
+    local_ips=Property(str, fget=get_local_ips, notify=camerasUpdated)

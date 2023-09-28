@@ -11,8 +11,8 @@ Dialog {
     property int left_margin_level_A: 20
     property int left_margin_level_B: 40
     property int left_margin_checkbox: 30
-    height: 600
-    width: 500
+    height: camera_settings_content.height + 200
+    width: camera_settings_content.width
     spacing: 20
 
     closePolicy: Popup.NoAutoClose
@@ -87,8 +87,9 @@ Dialog {
                 diaglog_remove.visible = true;
             }
         }
-    } 
+    }
     ColumnLayout {
+        id: camera_settings_content
         anchors.centerIn: parent
 
         RowLayout {
@@ -170,6 +171,7 @@ Dialog {
         }
         RowLayout {
             Layout.preferredHeight: row_height
+            visible: false
 
             Label {
                 Layout.preferredWidth: 130
@@ -206,7 +208,7 @@ Dialog {
         }
         RowLayout {
             Layout.preferredHeight: row_height
-            
+
             Label {
                 Layout.preferredWidth: 100
                 font.pointSize: 18
