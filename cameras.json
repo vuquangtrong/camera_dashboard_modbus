@@ -9,7 +9,7 @@
       "modbus_port": 5001,
       "modbus_regs_alarming": 40005,
       "modbus_regs_temperature_global_min": 40001,
-      "modbus_regs_temperature_global_max": 40003
+      "modbus_regs_temperature_global_max": 40050
     },
     {
       "ip": "192.168.1.168",
@@ -21,6 +21,17 @@
       "modbus_regs_alarming": 40010,
       "modbus_regs_temperature_global_min": 40006,
       "modbus_regs_temperature_global_max": 40008
+    },
+    {
+      "ip": "127.0.0.1",
+      "port": 5000,
+      "user": "admin",
+      "pwd": "admin123",
+      "modbus_ip": "127.0.0.1",
+      "modbus_port": 5001,
+      "modbus_regs_alarming": 40022,
+      "modbus_regs_temperature_global_min": 40018,
+      "modbus_regs_temperature_global_max": 40020
     }
   ]
 }

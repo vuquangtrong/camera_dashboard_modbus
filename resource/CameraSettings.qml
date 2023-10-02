@@ -11,6 +11,7 @@ Dialog {
     property int left_margin_level_A: 20
     property int left_margin_level_B: 40
     property int left_margin_checkbox: 30
+    property int loop_index: 0
     height: camera_settings_content.height + 200
     width: camera_settings_content.width
     spacing: 20
@@ -20,15 +21,96 @@ Dialog {
     title: (position >= 0 ? "CAM " + (position + 1) : "New Camera") + " Settings"
 
     onAccepted: {
-        camera.save_settings(ip.text, parseInt(port.text), user.text, pwd.text, modbus_ip.text,
-                            parseInt(modbus_port.text), parseInt(ti_modbus_address_alarming.text), parseInt(ti_modbus_address_temperature_low.text),
-                            parseInt(ti_modbus_address_temperature_high.text));
-        if (position == -1) {
-            Dashboard.add_camera();
-        } else {
-            Dashboard.save_cameras();
+        if(position == -1)
+        {
+            console.log("add cmr");
+            for(loop_index = 0; loop_index < Dashboard.cameras.length; loop_index++)
+            {
+                if((Dashboard.cameras[loop_index].modbus_address_alarming == parseInt(ti_modbus_address_alarming.text)) ||
+                (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_alarming.text)) <= 1)||
+                (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_alarming.text)) <= 1) ||
+                (Math.abs(Dashboard.cameras[loop_index].modbus_address_alarming - parseInt(ti_modbus_address_temperature_low.text)) <= 1) ||
+                (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_temperature_low.text)) <= 1)||
+                (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_temperature_low.text)) <= 1) ||
+                (Math.abs(Dashboard.cameras[loop_index].modbus_address_alarming - parseInt(ti_modbus_address_temperature_high.text)) <=1) ||
+                (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_temperature_high.text)) <= 1)||
+                (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_temperature_high.text)) <= 1)||
+                (Math.abs(parseInt(ti_modbus_address_temperature_high.text) - parseInt(ti_modbus_address_temperature_low.text)) <= 1) ||
+                (Math.abs(parseInt(ti_modbus_address_temperature_high.text) - parseInt(ti_modbus_address_alarming.text)) <= 1) || 
+                (Math.abs(parseInt(ti_modbus_address_temperature_low.text) - parseInt(ti_modbus_address_alarming.text)) <= 1))
+                {
+                    loop_index = Dashboard.cameras.length;
+                    dialog_address_exists.visible = true;
+                    console.log("value is not valid");
+                }
+            }
         }
+        else
+        {   
+            if(Dashboard.cameras[position].modbus_address_alarming != parseInt(ti_modbus_address_alarming.text))
+            {
+                for(loop_index = 0; loop_index < Dashboard.cameras.length; loop_index++)
+                {
+                    if(Dashboard.cameras[loop_index].modbus_address_alarming == parseInt(ti_modbus_address_alarming.text) ||
+                     (Math.abs(Dashboard.cameras[loop_index].modbus_address_alarming - parseInt(ti_modbus_address_temperature_low.text)) <= 1)||
+                     (Math.abs(Dashboard.cameras[loop_index].modbus_address_alarming - parseInt(ti_modbus_address_temperature_high.text)) <=1) ||
+                     (Math.abs(parseInt(ti_modbus_address_alarming.text) - parseInt(ti_modbus_address_temperature_high.text)) <=1) ||
+                     (Math.abs(parseInt(ti_modbus_address_alarming.text) - parseInt(ti_modbus_address_temperature_low.text)) <=1))
+                     {
+                        loop_index = Dashboard.cameras.length;
+                        dialog_address_exists.visible = true;
+                     }
+                }
+            }
+            else if(Dashboard.cameras[position].modbus_address_temperature_high != parseInt(ti_modbus_address_temperature_high.text))
+            {
+                for(loop_index = 0; loop_index < Dashboard.cameras.length; loop_index++)
+                {
+                    if((Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_temperature_high.text)) <= 1) ||
+                     (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_temperature_low.text)) <= 1)||
+                     (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_alarming.text)) <=1) ||
+                     (Math.abs(parseInt(ti_modbus_address_temperature_high.text) - parseInt(ti_modbus_address_alarming.text)) <=1) ||
+                     (Math.abs(parseInt(ti_modbus_address_temperature_high.text) - parseInt(ti_modbus_address_temperature_low.text)) <=1))
+                     {
+                        loop_index = Dashboard.cameras.length;
+                        dialog_address_exists.visible = true;
+                     }
+                }
+            }
+            else if(Dashboard.cameras[position].modbus_address_temperature_low != parseInt(ti_modbus_address_temperature_low.text))
+            {
+                for(loop_index = 0; loop_index < Dashboard.cameras.length; loop_index++)
+                {
+                    if((Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_temperature_high.text)) <= 1) ||
+                     (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_temperature_low.text)) <= 1)||
+                     (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_alarming.text)) <=1)
+                     (Math.abs(parseInt(ti_modbus_address_temperature_low.text) - parseInt(ti_modbus_address_alarming.text)) <=1) ||
+                     (Math.abs(parseInt(ti_modbus_address_temperature_high.text) - parseInt(ti_modbus_address_temperature_low.text)) <=1))
+                     {
+                        loop_index = Dashboard.cameras.length;
+                        dialog_address_exists.visible = true;
+                     }
+                }
+            }
+        }
+        
+        console.log(loop_index);
+        //console.log(Dashboard.cameras.length);
+        if(loop_index != Dashboard.cameras.length + 1)
+            {
+                console.log("saveeee");
+                camera.save_settings(ip.text, parseInt(port.text), user.text, pwd.text, modbus_ip.text,
+                                parseInt(modbus_port.text), parseInt(ti_modbus_address_alarming.text), parseInt(ti_modbus_address_temperature_low.text),
+                                parseInt(ti_modbus_address_temperature_high.text));
+                if (position == -1) {
+                    Dashboard.add_camera();
+                } else {
+                    Dashboard.save_cameras();
+                }
+            }
+            loop_index = 0;
     }
+
     onPositionChanged: {
         if (position == -1) {
             camera = Dashboard.new_camera;
@@ -74,6 +156,23 @@ Dialog {
             text: "Do you want to delete?"
         }
     }
+
+    Dialog {
+        id: dialog_address_exists
+        anchors.centerIn: parent
+        closePolicy: Popup.NoAutoClose
+        height: parent.height / 2
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        width: parent.width / 2
+
+        Label {
+            anchors.centerIn: parent
+            color: "yellow"
+            font.pointSize: font_size
+            text: "The address value already exist"
+        }
+    }
+
     Image {
         anchors.right: parent.right
         anchors.top: parent.top
