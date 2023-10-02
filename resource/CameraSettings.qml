@@ -8,11 +8,11 @@ Dialog {
     property int position: -2
     property int row_height: 30
     property int top_margin: 20
-    property int left_margin_level_A: 20
+    property int left_margin_level_A: 30
     property int left_margin_level_B: 40
-    property int left_margin_checkbox: 30
+    property int left_margin_checkbox: 35
     property int loop_index: 0
-    height: camera_settings_content.height + 200
+    height: camera_settings_content.height + 100
     width: camera_settings_content.width
     spacing: 20
 

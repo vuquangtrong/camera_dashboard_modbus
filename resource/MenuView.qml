@@ -29,6 +29,14 @@ Pane {
             font.bold: true
             text: "" + Dashboard.local_ips
         }
+        Label {
+            text: "Port:"
+        }
+        Label {
+            color: "yellow"
+            font.bold: true
+            text: "5001"
+        }
         Item {
             Layout.fillWidth: true
         }

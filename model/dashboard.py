@@ -40,7 +40,7 @@ class Dashboard(QObject):
             if result:
                 ips.append(result.group(1))
         
-        return ', '.join(ips)
+        return "127.0.0.1 / " + ' '.join(ips)
     
     def load_cameras(self):
         try:
