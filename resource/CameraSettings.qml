@@ -29,10 +29,10 @@ Dialog {
                 if((Dashboard.cameras[loop_index].modbus_address_alarming == parseInt(ti_modbus_address_alarming.text)) ||
                 (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_alarming.text)) <= 1)||
                 (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_alarming.text)) <= 1) ||
-                (Math.abs(Dashboard.cameras[loop_index].modbus_address_alarming - parseInt(ti_modbus_address_temperature_low.text)) <= 1) ||
+                (Dashboard.cameras[loop_index].modbus_address_alarming == parseInt(ti_modbus_address_temperature_low.text)) ||
                 (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_temperature_low.text)) <= 1)||
                 (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_temperature_low.text)) <= 1) ||
-                (Math.abs(Dashboard.cameras[loop_index].modbus_address_alarming - parseInt(ti_modbus_address_temperature_high.text)) <=1) ||
+                (Dashboard.cameras[loop_index].modbus_address_alarming == parseInt(ti_modbus_address_temperature_high.text)) ||
                 (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_temperature_high.text)) <= 1)||
                 (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_temperature_high.text)) <= 1)||
                 (Math.abs(parseInt(ti_modbus_address_temperature_high.text) - parseInt(ti_modbus_address_temperature_low.text)) <= 1) ||
@@ -69,7 +69,7 @@ Dialog {
                     if((Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_temperature_high.text)) <= 1) ||
                      (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_temperature_low.text)) <= 1)||
                      (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_alarming.text)) <=1) ||
-                     (Math.abs(parseInt(ti_modbus_address_temperature_high.text) - parseInt(ti_modbus_address_alarming.text)) <=1) ||
+                     (Math.abs(parseInt(ti_modbus_address_temperature_high.text) - parseInt(ti_modbus_address_alarming.text) <=1)) ||
                      (Math.abs(parseInt(ti_modbus_address_temperature_high.text) - parseInt(ti_modbus_address_temperature_low.text)) <=1))
                      {
                         loop_index = Dashboard.cameras.length;
@@ -84,7 +84,7 @@ Dialog {
                     if((Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_temperature_high.text)) <= 1) ||
                      (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_temperature_low.text)) <= 1)||
                      (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_alarming.text)) <=1)
-                     (Math.abs(parseInt(ti_modbus_address_temperature_low.text) - parseInt(ti_modbus_address_alarming.text)) <=1) ||
+                     (Math.abs(parseInt(ti_modbus_address_temperature_low.text) - parseInt(ti_modbus_address_alarming.text) <=1)) ||
                      (Math.abs(parseInt(ti_modbus_address_temperature_high.text) - parseInt(ti_modbus_address_temperature_low.text)) <=1))
                      {
                         loop_index = Dashboard.cameras.length;
