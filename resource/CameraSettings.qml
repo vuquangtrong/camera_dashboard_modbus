@@ -12,7 +12,8 @@ Dialog {
     property int left_margin_level_B: 40
     property int left_margin_checkbox: 35
     property int loop_index: 0
-    height: camera_settings_content.height + 100
+    property bool address_is_duplicated: false
+    height: camera_settings_content.height + 150
     width: camera_settings_content.width
     spacing: 20
 
@@ -23,92 +24,32 @@ Dialog {
     onAccepted: {
         if(position == -1)
         {
+            address_is_duplicated = false;
             console.log("add cmr");
             for(loop_index = 0; loop_index < Dashboard.cameras.length; loop_index++)
             {
-                if((Dashboard.cameras[loop_index].modbus_address_alarming == parseInt(ti_modbus_address_alarming.text)) ||
-                (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_alarming.text)) <= 1)||
-                (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_alarming.text)) <= 1) ||
-                (Dashboard.cameras[loop_index].modbus_address_alarming == parseInt(ti_modbus_address_temperature_low.text)) ||
-                (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_temperature_low.text)) <= 1)||
-                (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_temperature_low.text)) <= 1) ||
-                (Dashboard.cameras[loop_index].modbus_address_alarming == parseInt(ti_modbus_address_temperature_high.text)) ||
-                (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_temperature_high.text)) <= 1)||
-                (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_temperature_high.text)) <= 1)||
-                (Math.abs(parseInt(ti_modbus_address_temperature_high.text) - parseInt(ti_modbus_address_temperature_low.text)) <= 1) ||
-                (Math.abs(parseInt(ti_modbus_address_temperature_high.text) - parseInt(ti_modbus_address_alarming.text)) <= 1) || 
-                (Math.abs(parseInt(ti_modbus_address_temperature_low.text) - parseInt(ti_modbus_address_alarming.text)) <= 1))
+                if ((parseInt(ti_modbus_address_start.text) >= Dashboard.cameras[loop_index].modbus_address_start) &&
+                    (parseInt(ti_modbus_address_start.text) <= Dashboard.cameras[loop_index].modbus_address_start + 4))
                 {
                     loop_index = Dashboard.cameras.length;
+                    address_is_duplicated = true;
                     dialog_address_exists.visible = true;
                     console.log("value is not valid");
                 }
             }
-        }
-        else
-        {   
-            if(Dashboard.cameras[position].modbus_address_alarming != parseInt(ti_modbus_address_alarming.text))
-            {
-                for(loop_index = 0; loop_index < Dashboard.cameras.length; loop_index++)
-                {
-                    if(Dashboard.cameras[loop_index].modbus_address_alarming == parseInt(ti_modbus_address_alarming.text) ||
-                     (Math.abs(Dashboard.cameras[loop_index].modbus_address_alarming - parseInt(ti_modbus_address_temperature_low.text)) <= 1)||
-                     (Math.abs(Dashboard.cameras[loop_index].modbus_address_alarming - parseInt(ti_modbus_address_temperature_high.text)) <=1) ||
-                     (Math.abs(parseInt(ti_modbus_address_alarming.text) - parseInt(ti_modbus_address_temperature_high.text)) <=1) ||
-                     (Math.abs(parseInt(ti_modbus_address_alarming.text) - parseInt(ti_modbus_address_temperature_low.text)) <=1))
-                     {
-                        loop_index = Dashboard.cameras.length;
-                        dialog_address_exists.visible = true;
-                     }
-                }
-            }
-            else if(Dashboard.cameras[position].modbus_address_temperature_high != parseInt(ti_modbus_address_temperature_high.text))
-            {
-                for(loop_index = 0; loop_index < Dashboard.cameras.length; loop_index++)
-                {
-                    if((Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_temperature_high.text)) <= 1) ||
-                     (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_temperature_low.text)) <= 1)||
-                     (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_high - parseInt(ti_modbus_address_alarming.text)) <=1) ||
-                     (Math.abs(parseInt(ti_modbus_address_temperature_high.text) - parseInt(ti_modbus_address_alarming.text) <=1)) ||
-                     (Math.abs(parseInt(ti_modbus_address_temperature_high.text) - parseInt(ti_modbus_address_temperature_low.text)) <=1))
-                     {
-                        loop_index = Dashboard.cameras.length;
-                        dialog_address_exists.visible = true;
-                     }
-                }
-            }
-            else if(Dashboard.cameras[position].modbus_address_temperature_low != parseInt(ti_modbus_address_temperature_low.text))
-            {
-                for(loop_index = 0; loop_index < Dashboard.cameras.length; loop_index++)
-                {
-                    if((Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_temperature_high.text)) <= 1) ||
-                     (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_temperature_low.text)) <= 1)||
-                     (Math.abs(Dashboard.cameras[loop_index].modbus_address_temperature_low - parseInt(ti_modbus_address_alarming.text)) <=1)
-                     (Math.abs(parseInt(ti_modbus_address_temperature_low.text) - parseInt(ti_modbus_address_alarming.text) <=1)) ||
-                     (Math.abs(parseInt(ti_modbus_address_temperature_high.text) - parseInt(ti_modbus_address_temperature_low.text)) <=1))
-                     {
-                        loop_index = Dashboard.cameras.length;
-                        dialog_address_exists.visible = true;
-                     }
-                }
-            }
-        }
-        
-        console.log(loop_index);
-        //console.log(Dashboard.cameras.length);
-        if(loop_index != Dashboard.cameras.length + 1)
+
+            if(address_is_duplicated == false)
             {
                 console.log("saveeee");
                 camera.save_settings(ip.text, parseInt(port.text), user.text, pwd.text, modbus_ip.text,
-                                parseInt(modbus_port.text), parseInt(ti_modbus_address_alarming.text), parseInt(ti_modbus_address_temperature_low.text),
-                                parseInt(ti_modbus_address_temperature_high.text));
+                                parseInt(modbus_port.text), parseInt(ti_modbus_address_start.text));
                 if (position == -1) {
                     Dashboard.add_camera();
                 } else {
                     Dashboard.save_cameras();
                 }
             }
-            loop_index = 0;
+        }
     }
 
     onPositionChanged: {
@@ -389,16 +330,21 @@ Dialog {
             Label {
                 Layout.preferredWidth: 200
                 font.pointSize: font_size
-                text: "Min Temperature: "
+                text: "Start offset: "
                 Layout.leftMargin: left_margin_level_B
             }
             TextInput {
-                id: ti_modbus_address_temperature_low
+                id: ti_modbus_address_start
 
                 Layout.preferredWidth: 200
                 color: "darkturquoise"
                 font.pointSize: font_size
-                text: "" + camera.modbus_address_temperature_low
+                text: "" + camera.modbus_regs_start
+                onTextEdited: {
+                    ti_modbus_address_alarming.text = parseInt(text);
+                    ti_modbus_address_temperature_low.text = parseInt(text);
+                    ti_modbus_address_temperature_high.text = parseInt(text);
+                }
             }
         }
         RowLayout {
@@ -407,24 +353,7 @@ Dialog {
             Label {
                 Layout.preferredWidth: 200
                 font.pointSize: font_size
-                text: "Max Temperature: "
-                Layout.leftMargin: left_margin_level_B
-            }
-            TextInput {
-                id: ti_modbus_address_temperature_high
-
-                Layout.preferredWidth: 200
-                color: "darkturquoise"
-                font.pointSize: font_size
-                text: "" + camera.modbus_address_temperature_high
-            }
-        }
-        RowLayout {
-            Layout.preferredHeight: row_height
-
-            Label {
-                Layout.preferredWidth: 200
-                font.pointSize: font_size
+                color: "gray"
                 text: "Alarm status: "
                 Layout.leftMargin: left_margin_level_B
             }
@@ -435,6 +364,47 @@ Dialog {
                 color: "darkturquoise"
                 font.pointSize: font_size
                 text: "" + camera.modbus_address_alarming
+                readOnly: true
+            }
+        }
+        RowLayout {
+            Layout.preferredHeight: row_height
+
+            Label {
+                Layout.preferredWidth: 200
+                font.pointSize: font_size
+                color: "gray"
+                text: "Min Temperature: "
+                Layout.leftMargin: left_margin_level_B
+            }
+            TextInput {
+                id: ti_modbus_address_temperature_low
+
+                Layout.preferredWidth: 200
+                color: "darkturquoise"
+                font.pointSize: font_size
+                text: "" + camera.modbus_address_temperature_low
+                readOnly: true
+            }
+        }
+        RowLayout {
+            Layout.preferredHeight: row_height
+
+            Label {
+                Layout.preferredWidth: 200
+                font.pointSize: font_size
+                color: "gray"
+                text: "Max Temperature: "
+                Layout.leftMargin: left_margin_level_B
+            }
+            TextInput {
+                id: ti_modbus_address_temperature_high
+
+                Layout.preferredWidth: 200
+                color: "darkturquoise"
+                font.pointSize: font_size
+                text: "" + camera.modbus_address_temperature_high
+                readOnly: true
             }
         }
     }

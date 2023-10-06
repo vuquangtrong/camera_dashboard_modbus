@@ -49,8 +49,7 @@ class Dashboard(QObject):
                 for camera in js["cameras"]:
                     camera = Camera(self,
                                     camera["ip"], camera["port"], camera["user"], camera["pwd"],
-                                    camera["modbus_ip"], camera["modbus_port"], camera["modbus_regs_alarming"],
-                                    camera["modbus_regs_temperature_global_min"], camera["modbus_regs_temperature_global_max"])
+                                    camera["modbus_ip"], camera["modbus_port"], camera["modbus_regs_start"])
                     camera.resume_query()
                     self._cameras.append(camera)
         except Exception as e:
@@ -68,9 +67,7 @@ class Dashboard(QObject):
                         "pwd": camera._pwd,
                         "modbus_ip": camera._modbus_ip,
                         "modbus_port": camera._modbus_port,
-                        "modbus_regs_alarming": camera._modbus_regs_alarming,
-                        "modbus_regs_temperature_global_min": camera._modbus_regs_temperature_global_min,
-                        "modbus_regs_temperature_global_max": camera._modbus_regs_temperature_global_max
+                        "modbus_regs_start": camera._modbus_regs_start,
                     } for camera in self._cameras
                 ]
             }
@@ -89,8 +86,7 @@ class Dashboard(QObject):
     def add_camera(self):
         camera = Camera(self,
                         self._new_camera._ip, self._new_camera._port, self._new_camera._user, self._new_camera._pwd,
-                        self._new_camera._modbus_ip, self._new_camera._modbus_port, self._new_camera._modbus_regs_alarming,
-                        self._new_camera._modbus_regs_temperature_global_min, self._new_camera._modbus_regs_temperature_global_max)
+                        self._new_camera._modbus_ip, self._new_camera._modbus_port, self._new_camera._modbus_regs_start)
         camera.resume_query()
         self._cameras.append(camera)
         self.save_cameras()

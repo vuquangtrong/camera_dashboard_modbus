@@ -12,17 +12,18 @@ log.setLevel(logging.ERROR)
 class Modbus_Server:
     def __init__(self) -> None:
         # Define the Modbus registers
-        # self._coils = ModbusSequentialDataBlock(1, [False] * 9999)
-        # self._discrete_inputs = ModbusSequentialDataBlock(10001, [False] * 9999)
-        # self._input_registers = ModbusSequentialDataBlock(30001, [0] * 9999)
-        self._holding_registers = ModbusSequentialDataBlock(40001, [0] * 9999)
+        self._coils = ModbusSequentialDataBlock(0, [False] * 9999)
+        self._discrete_inputs = ModbusSequentialDataBlock(0, [False] * 9999)
+        self._input_registers = ModbusSequentialDataBlock(0, [0] * 9999)
+        self._holding_registers = ModbusSequentialDataBlock(0, [0] * 9999)
 
         # Define the Modbus slave context
         self._slave_context = ModbusSlaveContext(
-            # co=self._coils,
-            # di=self._discrete_inputs,
-            # ir=self._input_registers,
-            hr=self._holding_registers
+            co=self._coils,
+            di=self._discrete_inputs,
+            ir=self._input_registers,
+            hr=self._holding_registers,
+            # zero_mode = True
         )
 
         # Define the Modbus server context
