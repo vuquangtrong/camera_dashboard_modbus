@@ -11,7 +11,7 @@ Dialog {
     property int left_margin_level_A: 30
     property int left_margin_level_B: 40
     property int left_margin_checkbox: 35
-    property int loop_index: 0
+    property int camera_index: 0
     property bool address_is_duplicated: false
     height: camera_settings_content.height + 150
     width: camera_settings_content.width
@@ -22,36 +22,42 @@ Dialog {
     title: (position >= 0 ? "CAM " + (position + 1) : "New Camera") + " Settings"
 
     onAccepted: {
-        if(position == -1)
-        {
-            address_is_duplicated = false;
-            console.log("add cmr");
-            for(loop_index = 0; loop_index < Dashboard.cameras.length; loop_index++)
-            {
-                if ((parseInt(ti_modbus_address_start.text) >= Dashboard.cameras[loop_index].modbus_address_start) &&
-                    (parseInt(ti_modbus_address_start.text) <= Dashboard.cameras[loop_index].modbus_address_start + 4))
-                {
-                    loop_index = Dashboard.cameras.length;
-                    address_is_duplicated = true;
-                    dialog_address_exists.visible = true;
-                    console.log("value is not valid");
-                }
-            }
+        camera_index = 0;
+        address_is_duplicated = false;
+        console.log("add cmr");
 
-            if(address_is_duplicated == false)
+        // check address thresholds
+        while (address_is_duplicated == false && camera_index < Dashboard.cameras.length)
+        {
+            if ((camera_index != position) &&
+                (Math.abs((parseInt(ti_modbus_address_start.text) - Dashboard.cameras[camera_index].modbus_regs_start)) <= 4))
             {
-                console.log("saveeee");
-                camera.save_settings(ip.text, parseInt(port.text), user.text, pwd.text, modbus_ip.text,
-                                parseInt(modbus_port.text), parseInt(ti_modbus_address_start.text));
-                if (position == -1) {
-                    Dashboard.add_camera();
-                } else {
-                    Dashboard.save_cameras();
-                }
+                address_is_duplicated = true;
+            } else
+            {
+                camera_index ++;
             }
         }
-    }
 
+        if(address_is_duplicated == false)
+        {
+            console.log("saveeee");
+            camera.save_settings(ip.text, parseInt(port.text), user.text, pwd.text, modbus_ip.text,
+                                parseInt(modbus_port.text), parseInt(ti_modbus_address_start.text));
+            if (position == -1)
+            {
+                Dashboard.add_camera();
+            } else
+            {
+                Dashboard.save_cameras();
+            }
+        } else
+        {
+                dialog_address_exists.visible = true;
+                console.log("Offset value is not valid");
+                camera = Dashboard.cameras[position];
+        }
+    }
     onPositionChanged: {
         if (position == -1) {
             camera = Dashboard.new_camera;
@@ -319,7 +325,7 @@ Dialog {
             Label {
                 Layout.preferredWidth: 130
                 font.pointSize: 18
-                text: "Signal list address"
+                text: "Signal address list"
                 Layout.leftMargin: left_margin_level_A
                 color: "Yellow"
             }
@@ -340,11 +346,11 @@ Dialog {
                 color: "darkturquoise"
                 font.pointSize: font_size
                 text: "" + camera.modbus_regs_start
-                onTextEdited: {
-                    ti_modbus_address_alarming.text = parseInt(text);
-                    ti_modbus_address_temperature_low.text = parseInt(text);
-                    ti_modbus_address_temperature_high.text = parseInt(text);
-                }
+                // onTextEdited: {
+                //     ti_modbus_address_alarming.text = parseInt(text);
+                //     ti_modbus_address_temperature_low.text = parseInt(text) + 1;
+                //     ti_modbus_address_temperature_high.text = parseInt(text) + 3;
+                // }
             }
         }
         RowLayout {

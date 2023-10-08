@@ -32,7 +32,7 @@ class Camera(QObject):
     def __init__(self,
                  parent: QObject,
                  ip="127.0.0.1", port=5000, user="admin", pwd="admin123",
-                 modbus_ip="127.0.0.1", modbus_port=5001, modbus_regs_start=0):
+                 modbus_ip="127.0.0.1", modbus_port=502, modbus_regs_start=0):
         super().__init__(parent)
 
         # camera
@@ -322,13 +322,13 @@ F3wPTUp/+rydh3oBkQIDAQAB
         return self._modbus_regs_start
 
     def get_modbus_address_alarming(self):
-        return self._modbus_regs_alarming
+        return self._modbus_regs_alarming + 40001
 
     def get_modbus_address_temperature_high(self):
-        return self._modbus_regs_temperature_global_max
+        return self._modbus_regs_temperature_global_max + 40001
 
     def get_modbus_address_temperature_low(self):
-        return self._modbus_regs_temperature_global_min
+        return self._modbus_regs_temperature_global_min + 40001
 
     @Slot(str, int, str, str, str, int, int)
     def save_settings(self,
@@ -344,7 +344,8 @@ F3wPTUp/+rydh3oBkQIDAQAB
         # self._modbus_regs_temperature_global_max = modbus_regs_start + 1
         # self._modbus_regs_temperature_global_min = modbus_regs_start + 3
         self.recalculate_modbus_regs_addr()
-        self.statusUpdated.emit()
+        self.settingUpdated.emit()
+        # self.statusUpdated.emit()
 
         # force close all old connection
         self._logged_in = False
@@ -386,7 +387,7 @@ F3wPTUp/+rydh3oBkQIDAQAB
 
     ip = Property(str, fget=get_ip, notify=settingUpdated)
     port = Property(int, fget=get_port, notify=settingUpdated)
-    user = Property(str, fget=get_user,  notify=settingUpdated)
+    user = Property(str, fget=get_user, notify=settingUpdated)
     pwd = Property(str, fget=get_pwd, notify=settingUpdated)
 
     modbus_ip = Property(str, fget=get_modbus_ip, notify=settingUpdated)

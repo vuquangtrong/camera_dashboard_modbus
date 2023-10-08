@@ -29,4 +29,4 @@ slave_context = ModbusSlaveContext(
 server_context = ModbusServerContext(slaves=slave_context, single=True)
 
 # Start the Modbus TCP server
-StartTcpServer(context=server_context, address=("localhost", 5001))
+StartTcpServer(context=server_context, address=("localhost", 502))

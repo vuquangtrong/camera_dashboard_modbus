@@ -35,7 +35,7 @@ Pane {
         Label {
             color: "yellow"
             font.bold: true
-            text: "5001"
+            text: "502"
         }
         Item {
             Layout.fillWidth: true

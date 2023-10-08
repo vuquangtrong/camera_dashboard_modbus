@@ -30,7 +30,7 @@ class Modbus_Server:
         self._server_context = ModbusServerContext(slaves=self._slave_context, single=True)
 
     def serve(self):
-        StartTcpServer(context=self._server_context, address=("localhost", 5001))
+        StartTcpServer(context=self._server_context, address=("localhost", 502))
 
     def start(self):
         threading.Thread(target=self.serve, daemon=True).start()
